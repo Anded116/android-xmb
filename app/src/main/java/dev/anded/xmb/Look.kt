@@ -5,12 +5,13 @@ import java.io.File
 
 /**
  * Оформление целиком: фон, обработка значков, шрифты, выделение, панели. Цвет темы и «Фон» из настроек
- * действуют в XMB и «Авроре»; Nothing — всегда чёрный с точечной сеткой.
+ * действуют в «Классике» и «Авроре»; точечное (по мотивам Nothing OS) — всегда чёрный с точечной сеткой.
+ * title — строковый ресурс: в интерфейсе нет чужих марок («XMB», «PS3», «Nothing»).
  */
-enum class Look(val title: String) {
-    XMB("XMB PS3"),
-    NOTHING("Nothing"),
-    AURORA("Аврора"),
+enum class Look(val title: Int) {
+    XMB(R.string.look_classic),
+    NOTHING(R.string.look_dots),
+    AURORA(R.string.look_aurora),
     ;
 
     /** Белые силуэты без градиента и тени — плоские, как значки Nothing OS. */

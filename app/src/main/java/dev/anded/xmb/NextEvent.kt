@@ -14,11 +14,13 @@ import java.util.Locale
 class NextEvent(val title: String, val begin: Long, val allDay: Boolean, private val eventId: Long) {
 
     /** «Сегодня 14:00 · Созвон», «Завтра 09:30 · …», «Весь день · …». */
-    fun text(): String {
-        if (allDay) return "Весь день · $title"
+    fun text(context: Context): String {
+        if (allDay) return context.getString(R.string.event_all_day, title)
         val cal = Calendar.getInstance().apply { timeInMillis = begin }
         val today = Calendar.getInstance()
-        val day = if (cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) "Сегодня" else "Завтра"
+        val day = context.getString(
+            if (cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) R.string.event_today else R.string.event_tomorrow,
+        )
         return "$day ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(cal.time)} · $title"
     }
 

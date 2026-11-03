@@ -2,7 +2,8 @@
 
 Домашний экран в стиле XMB PS3: разделы по горизонтали, приложения по вертикали.
 Весь экран — один `View` (`XmbView`) с фоном на AGSL-шейдере, без Compose и AndroidX:
-зависимость одна — Kotlin stdlib.
+зависимость одна — Kotlin stdlib. Целевой API — 36 (Android 16), минимальный — 33.
+Интерфейс на английском (по умолчанию) и русском (`values-ru`); язык можно задать приложению отдельно от системы.
 
 ## Две сборки
 
@@ -143,8 +144,8 @@ powershell -File build.ps1 -Install                 # собрать и пост
 powershell -File build.ps1 -Install -Flavor store   # то же для store
 ```
 
-Нужны JDK 17 (`JAVA_HOME`) и Android SDK с platform 34 и build-tools 34 (`sdk.dir` в `local.properties`
-или `ANDROID_HOME`); Gradle 8.7 скачает wrapper. Свои пути можно положить в `local.ps1` рядом с `build.ps1` —
+Нужны JDK 17 (`JAVA_HOME`) и Android SDK с platform 36 и build-tools 36 (`sdk.dir` в `local.properties`
+или `ANDROID_HOME`); AGP 8.9, Kotlin 2.0, Gradle 8.11 скачает wrapper. Свои пути можно положить в `local.ps1` рядом с `build.ps1` —
 он не в git и выполняется перед сборкой. Без PowerShell: `./gradlew assembleRelease`.
 
 Release подписан отладочным ключом — сборка прототипа, но с R8 и без debuggable, чтобы мерить плавность честно.

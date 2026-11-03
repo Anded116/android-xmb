@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="key_service_label">XMB: кнопка Essential</string>
-    <string name="key_service_description">Нажатие кнопки Essential открывает поиск приложений из любого места, удержание поворачивает экран. Служба видит только эту кнопку и имя приложения на экране (для недавних в поиске), содержимое окон не читает.</string>
+    <string name="key_service_label">Launcher: Essential key</string>
+    <string name="key_service_description">Pressing the Essential key opens app search from anywhere, holding it rotates the screen. The service sees only this key and the name of the app on screen (for recents in search); it does not read window contents.</string>
 </resources>

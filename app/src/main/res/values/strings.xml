@@ -2,6 +2,139 @@
 <resources>
     <string name="app_name">XMB</string>
     <string name="wallpaper_label">XMB</string>
-    <string name="wallpaper_description">Фон XMB: градиент темы, волна PS3 и искры. С ним фон лаунчера остаётся на месте в многозадачности.</string>
-    <string name="notices_label">XMB: значки уведомлений</string>
+    <string name="wallpaper_description">Launcher background: theme gradient, wave and sparks. With it the background stays in place in recents.</string>
+    <string name="notices_label">Launcher: notification badges</string>
+
+    <!-- Sections -->
+    <string name="sec_top">Frequent</string>
+    <string name="sec_settings">Settings</string>
+    <string name="sec_chat">Social</string>
+    <string name="sec_fun">Entertainment</string>
+    <string name="sec_games">Games</string>
+    <string name="sec_photo">Photo &amp; video</string>
+    <string name="sec_news">Reading</string>
+    <string name="sec_shop">Shopping</string>
+    <string name="sec_banks">Finance</string>
+    <string name="sec_maps">Travel</string>
+    <string name="sec_work">Productivity</string>
+    <string name="sec_business">Business</string>
+    <string name="sec_edu">Education</string>
+    <string name="sec_health">Health</string>
+    <string name="sec_life">Lifestyle</string>
+    <string name="sec_tools">Utilities</string>
+    <string name="sec_other">Other</string>
+
+    <!-- Looks, themes, backgrounds, shapes -->
+    <string name="look_classic">Classic</string>
+    <string name="look_dots">Dot matrix</string>
+    <string name="look_aurora">Aurora</string>
+    <string name="theme_by_month">By month</string>
+    <string-array name="theme_names">
+        <item>Silver (January)</item>
+        <item>Gold (February)</item>
+        <item>Grass (March)</item>
+        <item>Sakura (April)</item>
+        <item>Emerald (May)</item>
+        <item>Amethyst (June)</item>
+        <item>Turquoise (July)</item>
+        <item>Blue (August)</item>
+        <item>Lilac (September)</item>
+        <item>Amber (October)</item>
+        <item>Chestnut (November)</item>
+        <item>Ruby (December)</item>
+    </string-array>
+    <string-array name="style_names">
+        <item>Wave</item>
+        <item>Calm</item>
+        <item>Gradient only</item>
+    </string-array>
+    <string-array name="shape_names">
+        <item>System</item>
+        <item>Squircle</item>
+        <item>Rounded square</item>
+        <item>Teardrop</item>
+    </string-array>
+
+    <!-- Settings section -->
+    <string name="set_look">Look</string>
+    <string name="set_theme">Theme</string>
+    <string name="set_style">Background</string>
+    <string name="set_freeze">Background animation</string>
+    <string name="freeze_on">Freezes after 30 s idle</string>
+    <string name="freeze_always">Always</string>
+    <string name="freeze_menu_on">Freeze after 30 s idle</string>
+    <string name="set_dock">Dock</string>
+    <string name="dock_on">Your five apps at the bottom</string>
+    <string name="dock_off">Off</string>
+    <string name="dock_show">Show</string>
+    <string name="dock_hide">Turn off</string>
+    <string name="set_order">Order in sections</string>
+    <string name="order_usage">Most used first</string>
+    <string name="order_abc">Alphabetical</string>
+    <string name="set_icons">Icons</string>
+    <string name="icons_system">System</string>
+    <string name="icons_white">White silhouettes</string>
+    <string name="icons_color">Free-form</string>
+    <string name="icons_pack_missing">Icon pack not found</string>
+    <string name="set_shape">Icon shape</string>
+    <string name="set_notices">Notification badges</string>
+    <string name="notices_on">On — counts on icons and «Now playing»</string>
+    <string name="notices_off">Grant notification access</string>
+    <string name="set_calendar">Calendar in the card</string>
+    <string name="calendar_on">Next event above the sections</string>
+    <string name="calendar_off">Allow calendar access</string>
+    <string name="set_hints">Tips</string>
+    <string name="hints_sub">How to use the launcher</string>
+    <string name="set_wallpaper">Live wallpaper</string>
+    <string name="wallpaper_on">Set — the background stays in recents</string>
+    <string name="wallpaper_off">Set it so the background doesn\'t fold away</string>
+    <string name="set_home">Home screen</string>
+    <string name="home_on">This is the default launcher</string>
+    <string name="home_off">Make it the default launcher</string>
+    <string name="set_key">Essential key</string>
+    <string name="key_on">Press: search. Hold: rotate the screen</string>
+    <string name="key_off">Off — enable in Accessibility</string>
+    <string name="set_reset">Reset layout</string>
+    <string name="reset_sub">Return apps to their default sections</string>
+
+    <!-- App menu -->
+    <string name="dock_place">Position in dock…</string>
+    <string name="dock_remove">Remove from dock</string>
+    <string name="dock_add">Add to dock</string>
+    <string name="dock_replace">Add to dock instead of…</string>
+    <string name="badge_toggle">Notification count</string>
+    <string name="move_to">Move to section…</string>
+    <string name="move_title">Section: %s</string>
+    <string name="app_info">App info</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="replace_title">Instead of: %s</string>
+    <string name="place_title">Dock position: %s</string>
+    <string name="fresh_title">New: %s</string>
+    <string name="launch_failed">Can\'t open %s</string>
+
+    <!-- Card, search, column -->
+    <string name="event_all_day">All day · %s</string>
+    <string name="event_today">Today</string>
+    <string name="event_tomorrow">Tomorrow</string>
+    <string name="search_hint">Search</string>
+    <string name="search_empty">Nothing found</string>
+    <string name="column_empty">Empty</string>
+
+    <!-- Tips -->
+    <string name="hints_title">How to use</string>
+    <string name="hints_close">Tap to close</string>
+    <string name="hint_swipe_t">Swipe the column</string>
+    <string name="hint_swipe">Next section; on the icon row — several at once</string>
+    <string name="hint_double_t">Double-tap empty space</string>
+    <string name="hint_double">App search</string>
+    <string name="hint_edge_t">Right edge of the column</string>
+    <string name="hint_edge">Fast scroll through a long section by letter</string>
+    <string name="hint_long_t">Long press</string>
+    <string name="hint_long">App shortcuts: chats, actions; move to a section</string>
+    <string name="hint_key_t">Essential key</string>
+    <string name="hint_key">Press — search, again — back; hold — rotate the screen</string>
+    <string name="hint_dock_t">Dock</string>
+    <string name="hint_dock">Your five apps: long-press an app to add, remove or reorder</string>
+    <string name="hint_settings_t">«Settings» section</string>
+    <string name="hint_settings">Theme, background, icons, notifications, calendar, these tips</string>
 </resources>

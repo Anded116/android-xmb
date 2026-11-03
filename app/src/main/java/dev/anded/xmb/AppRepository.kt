@@ -283,51 +283,39 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         val wallpaper = isOurWallpaper(context)
         val iconMode = XmbSettings.icons
         val iconName = when {
-            iconMode == XmbSettings.ICONS_WHITE -> "Белые силуэты"
-            iconMode == XmbSettings.ICONS_COLOR -> "Своей формы"
+            iconMode == XmbSettings.ICONS_WHITE -> str(R.string.icons_white)
+            iconMode == XmbSettings.ICONS_COLOR -> str(R.string.icons_color)
             iconMode.startsWith(XmbSettings.ICON_PACK) -> IconPack.installed(context)
-                .firstOrNull { it.first == iconMode.removePrefix(XmbSettings.ICON_PACK) }?.second ?: "Пакет не найден"
-            else -> "Как в системе"
+                .firstOrNull { it.first == iconMode.removePrefix(XmbSettings.ICON_PACK) }?.second ?: str(R.string.icons_pack_missing)
+            else -> str(R.string.icons_system)
         }
+        val res = context.resources
         return listOf(
-            special("look", "Оформление", Glyph.LOOK, XmbSettings.look.title),
-            special("theme", "Тема", Glyph.THEME, XmbSettings.themeName()),
-            special("style", "Фон", Glyph.WAVE, XmbSettings.STYLE_NAMES[XmbSettings.style]),
-            special("freeze", "Анимация фона", Glyph.WAVE, if (XmbSettings.freezeBg) "Замирает через 30 с покоя" else "Всегда"),
-            special("dock", "Док", Glyph.GRID, if (XmbSettings.dock) "Пять своих приложений внизу" else "Выключен"),
-            special("order", "Порядок в разделах", Glyph.GRID, if (XmbSettings.sortByUsage) "По частоте" else "По алфавиту"),
-            special("icons", "Значки", Glyph.ICONS, iconName),
-            special("shape", "Форма значков", Glyph.ICONS, XmbSettings.SHAPE_NAMES[XmbSettings.iconShape]),
-            special(
-                "notices", "Значки уведомлений", Glyph.BELL,
-                if (noticesEnabled(context)) "Включены — число на значках и «Сейчас играет»" else "Выдать доступ к уведомлениям",
-            ),
-            special(
-                "calendar", "Календарь в карточке", Glyph.CALENDAR,
-                if (NextEvent.granted(context)) "Ближайшее событие над разделами" else "Разрешить доступ к календарю",
-            ),
-            special("hints", "Подсказки", Glyph.HELP, "Как пользоваться XMB"),
-            special(
-                "wallpaper", "Живые обои", Glyph.WALLPAPER,
-                if (wallpaper) "Стоят — фон XMB и в многозадачности" else "Поставить, чтобы фон не сворачивался",
-            ),
-            special(
-                "home", "Домашний экран", Glyph.HOME,
-                if (home) "XMB — лаунчер по умолчанию" else "Сделать XMB лаунчером по умолчанию",
-            ),
+            special("look", R.string.set_look, Glyph.LOOK, str(XmbSettings.look.title)),
+            special("theme", R.string.set_theme, Glyph.THEME, XmbSettings.themeName(context)),
+            special("style", R.string.set_style, Glyph.WAVE, res.getStringArray(R.array.style_names)[XmbSettings.style]),
+            special("freeze", R.string.set_freeze, Glyph.WAVE, str(if (XmbSettings.freezeBg) R.string.freeze_on else R.string.freeze_always)),
+            special("dock", R.string.set_dock, Glyph.GRID, str(if (XmbSettings.dock) R.string.dock_on else R.string.dock_off)),
+            special("order", R.string.set_order, Glyph.GRID, str(if (XmbSettings.sortByUsage) R.string.order_usage else R.string.order_abc)),
+            special("icons", R.string.set_icons, Glyph.ICONS, iconName),
+            special("shape", R.string.set_shape, Glyph.ICONS, res.getStringArray(R.array.shape_names)[XmbSettings.iconShape]),
+            special("notices", R.string.set_notices, Glyph.BELL, str(if (noticesEnabled(context)) R.string.notices_on else R.string.notices_off)),
+            special("calendar", R.string.set_calendar, Glyph.CALENDAR, str(if (NextEvent.granted(context)) R.string.calendar_on else R.string.calendar_off)),
+            special("hints", R.string.set_hints, Glyph.HELP, str(R.string.hints_sub)),
+            special("wallpaper", R.string.set_wallpaper, Glyph.WALLPAPER, str(if (wallpaper) R.string.wallpaper_on else R.string.wallpaper_off)),
+            special("home", R.string.set_home, Glyph.HOME, str(if (home) R.string.home_on else R.string.home_off)),
             Edition.keyService(context)?.let {
-                special(
-                    "key", "Кнопка Essential", Glyph.KEY,
-                    if (key) "Нажатие: поиск. Удержание: поворот экрана" else "Выключена — включить в спец. возможностях",
-                )
+                special("key", R.string.set_key, Glyph.KEY, str(if (key) R.string.key_on else R.string.key_off))
             },
-            special("reset", "Сбросить раскладку", Glyph.RESET, "Вернуть приложения в разделы по умолчанию"),
+            special("reset", R.string.set_reset, Glyph.RESET, str(R.string.reset_sub)),
         ).filterNotNull()
     }
 
-    private fun special(id: String, label: String, glyph: Glyph, subtitle: String): AppEntry {
+    private fun str(id: Int): String = context.getString(id)
+
+    private fun special(id: String, label: Int, glyph: Glyph, subtitle: String): AppEntry {
         val key = "special:$id"
-        val entry = AppEntry(key, label, null, null, null, id, subtitle)
+        val entry = AppEntry(key, str(label), null, null, null, id, subtitle)
         entry.icon = icons.getOrPut(key) { renderGlyph(glyph) }
         return entry
     }

@@ -5,6 +5,7 @@ import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -145,9 +146,14 @@ object NowPlaying {
     fun open(context: Context) {
         val pi = controller?.sessionActivity
         if (pi != null) {
-            val options = ActivityOptions.makeBasic()
-                .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                .toBundle()
+            // Тап по карточке — XMB на экране; с Android 16 для этого есть отдельный режим «если видно».
+            val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE
+            } else {
+                @Suppress("DEPRECATION")
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            }
+            val options = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(mode).toBundle()
             if (runCatching { pi.send(context, 0, null, null, null, null, options) }.isSuccess) return
         }
         val launch = pkg?.let { context.packageManager.getLaunchIntentForPackage(it) } ?: return

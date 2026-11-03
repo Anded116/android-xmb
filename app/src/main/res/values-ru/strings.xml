@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallpaper_description">Фон лаунчера: градиент темы, волна и искры. С ним фон остаётся на месте в многозадачности.</string>
+    <string name="notices_label">Лаунчер: значки уведомлений</string>
+
+    <!-- Разделы -->
+    <string name="sec_top">Частые</string>
+    <string name="sec_settings">Настройки</string>
+    <string name="sec_chat">Общение</string>
+    <string name="sec_fun">Развлечения</string>
+    <string name="sec_games">Игры</string>
+    <string name="sec_photo">Фото и видео</string>
+    <string name="sec_news">Чтение</string>
+    <string name="sec_shop">Покупки</string>
+    <string name="sec_banks">Финансы</string>
+    <string name="sec_maps">Путешествия</string>
+    <string name="sec_work">Работа</string>
+    <string name="sec_business">Бизнес</string>
+    <string name="sec_edu">Учёба</string>
+    <string name="sec_health">Здоровье</string>
+    <string name="sec_life">Образ жизни</string>
+    <string name="sec_tools">Утилиты</string>
+    <string name="sec_other">Прочее</string>
+
+    <!-- Оформления, темы, фоны, формы -->
+    <string name="look_classic">Классика</string>
+    <string name="look_dots">Точечная</string>
+    <string name="look_aurora">Аврора</string>
+    <string name="theme_by_month">По месяцу</string>
+    <string-array name="theme_names">
+        <item>Серебро (январь)</item>
+        <item>Золото (февраль)</item>
+        <item>Трава (март)</item>
+        <item>Сакура (апрель)</item>
+        <item>Изумруд (май)</item>
+        <item>Аметист (июнь)</item>
+        <item>Бирюза (июль)</item>
+        <item>Синий (август)</item>
+        <item>Сирень (сентябрь)</item>
+        <item>Янтарь (октябрь)</item>
+        <item>Каштан (ноябрь)</item>
+        <item>Рубин (декабрь)</item>
+    </string-array>
+    <string-array name="style_names">
+        <item>Волна</item>
+        <item>Спокойный</item>
+        <item>Только градиент</item>
+    </string-array>
+    <string-array name="shape_names">
+        <item>Как в системе</item>
+        <item>Сквиркл</item>
+        <item>Скруглённый квадрат</item>
+        <item>Капля</item>
+    </string-array>
+
+    <!-- Раздел «Настройки» -->
+    <string name="set_look">Оформление</string>
+    <string name="set_theme">Тема</string>
+    <string name="set_style">Фон</string>
+    <string name="set_freeze">Анимация фона</string>
+    <string name="freeze_on">Замирает через 30 с покоя</string>
+    <string name="freeze_always">Всегда</string>
+    <string name="freeze_menu_on">Замирать через 30 с покоя</string>
+    <string name="set_dock">Док</string>
+    <string name="dock_on">Пять своих приложений внизу</string>
+    <string name="dock_off">Выключен</string>
+    <string name="dock_show">Показывать</string>
+    <string name="dock_hide">Выключить</string>
+    <string name="set_order">Порядок в разделах</string>
+    <string name="order_usage">По частоте</string>
+    <string name="order_abc">По алфавиту</string>
+    <string name="set_icons">Значки</string>
+    <string name="icons_system">Как в системе</string>
+    <string name="icons_white">Белые силуэты</string>
+    <string name="icons_color">Своей формы</string>
+    <string name="icons_pack_missing">Пакет значков не найден</string>
+    <string name="set_shape">Форма значков</string>
+    <string name="set_notices">Значки уведомлений</string>
+    <string name="notices_on">Включены — число на значках и «Сейчас играет»</string>
+    <string name="notices_off">Выдать доступ к уведомлениям</string>
+    <string name="set_calendar">Календарь в карточке</string>
+    <string name="calendar_on">Ближайшее событие над разделами</string>
+    <string name="calendar_off">Разрешить доступ к календарю</string>
+    <string name="set_hints">Подсказки</string>
+    <string name="hints_sub">Как пользоваться лаунчером</string>
+    <string name="set_wallpaper">Живые обои</string>
+    <string name="wallpaper_on">Стоят — фон остаётся и в многозадачности</string>
+    <string name="wallpaper_off">Поставить, чтобы фон не сворачивался</string>
+    <string name="set_home">Домашний экран</string>
+    <string name="home_on">Лаунчер по умолчанию</string>
+    <string name="home_off">Сделать лаунчером по умолчанию</string>
+    <string name="set_key">Кнопка Essential</string>
+    <string name="key_on">Нажатие: поиск. Удержание: поворот экрана</string>
+    <string name="key_off">Выключена — включить в спец. возможностях</string>
+    <string name="set_reset">Сбросить раскладку</string>
+    <string name="reset_sub">Вернуть приложения в разделы по умолчанию</string>
+
+    <!-- Меню приложения -->
+    <string name="dock_place">Место в доке…</string>
+    <string name="dock_remove">Убрать из дока</string>
+    <string name="dock_add">Добавить в док</string>
+    <string name="dock_replace">В док вместо…</string>
+    <string name="badge_toggle">Счётчик уведомлений</string>
+    <string name="move_to">Переложить в раздел…</string>
+    <string name="move_title">В раздел: %s</string>
+    <string name="app_info">О приложении</string>
+    <string name="uninstall">Удалить</string>
+    <string name="replace_title">Вместо чего: %s</string>
+    <string name="place_title">Место в доке: %s</string>
+    <string name="fresh_title">Новое: %s</string>
+    <string name="launch_failed">Не запускается: %s</string>
+
+    <!-- Карточка, поиск, колонка -->
+    <string name="event_all_day">Весь день · %s</string>
+    <string name="event_today">Сегодня</string>
+    <string name="event_tomorrow">Завтра</string>
+    <string name="search_hint">Поиск</string>
+    <string name="search_empty">Ничего не найдено</string>
+    <string name="column_empty">Пусто</string>
+
+    <!-- Подсказки -->
+    <string name="hints_title">Как пользоваться</string>
+    <string name="hints_close">Нажмите, чтобы закрыть</string>
+    <string name="hint_swipe_t">Свайп по колонке</string>
+    <string name="hint_swipe">Соседний раздел; по ряду значков — сразу через несколько</string>
+    <string name="hint_double_t">Двойной тап по пустому месту</string>
+    <string name="hint_double">Поиск приложений</string>
+    <string name="hint_edge_t">Правый край колонки</string>
+    <string name="hint_edge">Быстрая прокрутка длинного раздела с буквами</string>
+    <string name="hint_long_t">Долгий тап</string>
+    <string name="hint_long">Ярлыки приложения: чаты, действия; перенос в раздел</string>
+    <string name="hint_key_t">Кнопка Essential</string>
+    <string name="hint_key">Нажатие — поиск, повторное — обратно; удержание — поворот экрана</string>
+    <string name="hint_dock_t">Док</string>
+    <string name="hint_dock">Свои пять приложений: долгий тап по приложению — добавить, убрать, переставить</string>
+    <string name="hint_settings_t">Раздел «Настройки»</string>
+    <string name="hint_settings">Тема, фон, значки, уведомления, календарь, эти подсказки</string>
+</resources>

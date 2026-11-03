@@ -83,7 +83,9 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     // Видимые разделы приходят из репозитория вместе с колонками; пустые скрыты, число меняется.
     private var sections: List<Category> = Categories.all.filter { it.always }
+    private var titles = sections.map { context.getString(it.title) }
     private var count = sections.size
+    private val emptyText = context.getString(R.string.column_empty)
     private var columns: List<List<AppEntry>> = List(count) { emptyList() }
 
     // Раздел, сохранённый с прошлого раза: применяется, как только он появится среди видимых.
@@ -339,6 +341,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         val oldPos = pos
         val oldTarget = posTarget
         sections = secs
+        titles = secs.map { context.getString(it.title) }
         count = secs.size
         pos = FloatArray(count)
         posVel = FloatArray(count)
@@ -429,6 +432,13 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             BgBus.busy = false
             FrameRate.vote(this, false)
         }
+    }
+
+    fun closeHints(): Boolean {
+        if (!hintsOpen) return false
+        hintsOpen = false
+        invalidate()
+        return true
     }
 
     fun closeMenu(): Boolean {
@@ -578,7 +588,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         val list = columns[c]
         if (list.isEmpty()) {
             subPaint.fade((alpha * 150).toInt())
-            canvas.drawText("Пусто", textX + ox, selY + labelCenter, subPaint)
+            canvas.drawText(emptyText, textX + ox, selY + labelCenter, subPaint)
             return
         }
         if (textMaxW != list[0].shownFor) for (e in list) ellipsize(e)
@@ -662,7 +672,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val la = (1f - d * 1.8f).coerceIn(0f, 1f)
             if (la > 0f) {
                 catLabelPaint.fade((la * 255).toInt())
-                canvas.drawText(sections[i].title, x, barY + catBig / 2 + 26 * dp, catLabelPaint)
+                canvas.drawText(titles[i], x, barY + catBig / 2 + 26 * dp, catLabelPaint)
             }
         }
     }
@@ -882,7 +892,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val tx = left + 52 * dp
             cardSubPaint.fade((235 * a).toInt())
             canvas.drawText(
-                TextUtils.ellipsize(event.text(), cardSubPaint, right - 16 * dp - tx, TextUtils.TruncateAt.END).toString(),
+                TextUtils.ellipsize(event.text(context), cardSubPaint, right - 16 * dp - tx, TextUtils.TruncateAt.END).toString(),
                 tx, cy + 5 * dp, cardSubPaint,
             )
         }
@@ -913,21 +923,21 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         val x = 32 * dp
         val hints = HINTS.filter { (title, _) ->
             when (title) {
-                HINT_KEY -> Edition.keyService(context) != null
-                HINT_DOCK -> dock.isNotEmpty()
+                R.string.hint_key_t -> Edition.keyService(context) != null
+                R.string.hint_dock_t -> dock.isNotEmpty()
                 else -> true
             }
         }
         var y = topInset + max(48 * dp, (height - topInset - hints.size * 80 * dp - 120 * dp) / 2)
         menuTitlePaint.fade(255)
-        canvas.drawText("Как пользоваться XMB", x, y, menuTitlePaint)
+        canvas.drawText(context.getString(R.string.hints_title), x, y, menuTitlePaint)
         y += 44 * dp
         val w = width - x * 2
         for ((title, text) in hints) {
             menuItemPaint.fade(255)
-            canvas.drawText(title, x, y, menuItemPaint)
+            canvas.drawText(context.getString(title), x, y, menuItemPaint)
             subPaint.fade(190)
-            var rest = text
+            var rest = context.getString(text)
             var line = y + 20 * dp
             while (rest.isNotEmpty()) {
                 var n = subPaint.breakText(rest, true, w, null)
@@ -939,7 +949,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             y = line + 24 * dp
         }
         subPaint.fade(150)
-        canvas.drawText("Нажмите, чтобы закрыть", x, y + 12 * dp, subPaint)
+        canvas.drawText(context.getString(R.string.hints_close), x, y + 12 * dp, subPaint)
     }
 
     /** Только в альбоме, где строка состояния скрыта: дата, заряд и время одной строкой в углу. */
@@ -1363,17 +1373,17 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         const val CARD_NEXT = 2
         const val CARD_MEDIA = 3
         const val CARD_EVENT = 4
-        const val HINT_KEY = "Кнопка Essential"
-        const val HINT_DOCK = "Док"
         const val DOUBLE_TAP_NS = 320_000_000L
+
+        // Подсказки: заголовок и пояснение (строковые ресурсы); кнопка и док — только где они есть.
         val HINTS = listOf(
-            "Свайп по колонке" to "Соседний раздел; по ряду значков — сразу через несколько",
-            "Двойной тап по пустому месту" to "Поиск приложений",
-            "Правый край колонки" to "Быстрая прокрутка длинного раздела с буквами",
-            "Долгий тап" to "Ярлыки приложения: чаты, действия; перенос в раздел",
-            HINT_KEY to "Нажатие — поиск, повторное — обратно; удержание — поворот экрана",
-            HINT_DOCK to "Свои пять приложений: долгий тап по приложению — добавить, убрать, переставить",
-            "«Настройки» XMB" to "Тема, фон, значки, уведомления, календарь, эти подсказки",
+            R.string.hint_swipe_t to R.string.hint_swipe,
+            R.string.hint_double_t to R.string.hint_double,
+            R.string.hint_edge_t to R.string.hint_edge,
+            R.string.hint_long_t to R.string.hint_long,
+            R.string.hint_key_t to R.string.hint_key,
+            R.string.hint_dock_t to R.string.hint_dock,
+            R.string.hint_settings_t to R.string.hint_settings,
         )
     }
 }

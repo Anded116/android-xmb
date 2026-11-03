@@ -40,6 +40,7 @@ import kotlin.math.roundToInt
  */
 @SuppressLint("ViewConstructor")
 class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(context) {
+    private val emptyText = context.getString(R.string.search_empty)
 
     var onLaunch: (AppEntry, Rect) -> Unit = { _, _ -> }
 
@@ -112,7 +113,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
             background = null
             setTextColor(Color.WHITE)
             setHintTextColor(0x99FFFFFF.toInt())
-            hint = "Поиск"
+            hint = context.getString(R.string.search_hint)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
             isSingleLine = true
             gravity = Gravity.CENTER_VERTICAL
@@ -396,7 +397,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
 
         if (icons.isEmpty() && rows.isEmpty() && field.text.isNotEmpty()) {
             emptyPaint.fade((150 * a).toInt())
-            canvas.drawText("Ничего не найдено", panelLeft() + 8 * dp, iconsTop() + 28 * dp, emptyPaint)
+            canvas.drawText(emptyText, panelLeft() + 8 * dp, iconsTop() + 28 * dp, emptyPaint)
         }
         val cellW = cellW()
         for (i in icons.indices) {

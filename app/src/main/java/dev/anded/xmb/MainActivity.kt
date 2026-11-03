@@ -19,6 +19,8 @@ import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import java.util.Calendar
 import kotlin.math.roundToInt
 
@@ -38,7 +40,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setDecorFitsSystemWindows(false)
+        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, back)
         launcherApps = getSystemService(LauncherApps::class.java)
         fastModeId = findFastMode()
 
@@ -188,9 +190,10 @@ class MainActivity : Activity() {
         handleKey(intent)
     }
 
-    @Deprecated("Лаунчер сам обрабатывает «назад»")
-    override fun onBackPressed() {
-        if (search.open) closeSearch() else xmb.closeMenu()
+    // С целевым API 36 «назад» приходит только сюда (onBackPressed не вызывается). Лаунчер — домашний экран:
+    // «назад» всегда наш — закрыть поиск, подсказки или меню, иначе ничего.
+    private val back = OnBackInvokedCallback {
+        if (search.open) closeSearch() else if (!xmb.closeHints()) xmb.closeMenu()
     }
 
     /** Ближайшее событие — запрос к провайдеру календаря в фоне, результат — в карточку «Сейчас». */
@@ -245,7 +248,7 @@ class MainActivity : Activity() {
                     }
                     AppHistory.moveToFront(cn.packageName)
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Не запускается: ${entry.label}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.launch_failed, entry.label), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -263,7 +266,7 @@ class MainActivity : Activity() {
 
     private fun lookMenu() {
         val items = Look.entries.map { look ->
-            XmbView.MenuItem(look.title, checked = XmbSettings.look == look, keepOpen = true) {
+            XmbView.MenuItem(getString(look.title), checked = XmbSettings.look == look, keepOpen = true) {
                 if (XmbSettings.look != look) {
                     repo.setLook(look)
                     xmb.applyLook()
@@ -272,20 +275,20 @@ class MainActivity : Activity() {
                 lookMenu()
             }
         }
-        xmb.showMenu("Оформление", items)
+        xmb.showMenu(getString(R.string.set_look), items)
     }
 
     private fun themeMenu() {
         val month = Calendar.getInstance().get(Calendar.MONTH)
         val cur = XmbSettings.theme
         val items = ArrayList<XmbView.MenuItem>()
-        items += XmbView.MenuItem("По месяцу", swatch(month), cur == XmbSettings.THEME_BY_MONTH, keepOpen = true) {
+        items += XmbView.MenuItem(getString(R.string.theme_by_month), swatch(month), cur == XmbSettings.THEME_BY_MONTH, keepOpen = true) {
             pickTheme(XmbSettings.THEME_BY_MONTH)
         }
-        XmbSettings.THEME_NAMES.forEachIndexed { i, name ->
+        resources.getStringArray(R.array.theme_names).forEachIndexed { i, name ->
             items += XmbView.MenuItem(name, swatch(i), cur == i, keepOpen = true) { pickTheme(i) }
         }
-        xmb.showMenu("Тема", items)
+        xmb.showMenu(getString(R.string.set_theme), items)
     }
 
     private fun swatch(theme: Int) = intArrayOf(WaveShader.themeTop(theme), WaveShader.themeBottom(theme))
@@ -297,22 +300,22 @@ class MainActivity : Activity() {
     }
 
     private fun styleMenu() {
-        val items = XmbSettings.STYLE_NAMES.mapIndexed { i, name ->
+        val items = resources.getStringArray(R.array.style_names).mapIndexed { i, name ->
             XmbView.MenuItem(name, checked = XmbSettings.style == i, keepOpen = true) {
                 XmbSettings.style = i
                 styleMenu()
                 repo.reload()
             }
         }
-        xmb.showMenu("Фон", items)
+        xmb.showMenu(getString(R.string.set_style), items)
     }
 
     private fun iconsMenu() {
         val cur = XmbSettings.icons
         val options = ArrayList<Pair<String, String>>()
-        options += XmbSettings.ICONS_SYSTEM to "Как в системе"
-        options += XmbSettings.ICONS_WHITE to "Белые силуэты"
-        options += XmbSettings.ICONS_COLOR to "Своей формы"
+        options += XmbSettings.ICONS_SYSTEM to getString(R.string.icons_system)
+        options += XmbSettings.ICONS_WHITE to getString(R.string.icons_white)
+        options += XmbSettings.ICONS_COLOR to getString(R.string.icons_color)
         IconPack.installed(this).forEach { (pkg, label) -> options += XmbSettings.ICON_PACK + pkg to label }
         val items = options.map { (mode, label) ->
             XmbView.MenuItem(label, checked = cur == mode, keepOpen = true) {
@@ -320,50 +323,50 @@ class MainActivity : Activity() {
                 iconsMenu()
             }
         }
-        xmb.showMenu("Значки", items)
+        xmb.showMenu(getString(R.string.set_icons), items)
     }
 
     private fun shapeMenu() {
-        val items = XmbSettings.SHAPE_NAMES.mapIndexed { i, name ->
+        val items = resources.getStringArray(R.array.shape_names).mapIndexed { i, name ->
             XmbView.MenuItem(name, checked = XmbSettings.iconShape == i, keepOpen = true) {
                 repo.setIconShape(i)
                 shapeMenu()
             }
         }
-        xmb.showMenu("Форма значков", items)
+        xmb.showMenu(getString(R.string.set_shape), items)
     }
 
     private fun dockMenu() {
-        val items = listOf(true to "Показывать", false to "Выключить").map { (on, label) ->
+        val items = listOf(true to getString(R.string.dock_show), false to getString(R.string.dock_hide)).map { (on, label) ->
             XmbView.MenuItem(label, checked = XmbSettings.dock == on, keepOpen = true) {
                 XmbSettings.dock = on
                 dockMenu()
                 repo.reload()
             }
         }
-        xmb.showMenu("Док", items)
+        xmb.showMenu(getString(R.string.set_dock), items)
     }
 
     private fun freezeMenu() {
-        val items = listOf(true to "Замирать через 30 с покоя", false to "Всегда").map { (freeze, label) ->
+        val items = listOf(true to getString(R.string.freeze_menu_on), false to getString(R.string.freeze_always)).map { (freeze, label) ->
             XmbView.MenuItem(label, checked = XmbSettings.freezeBg == freeze, keepOpen = true) {
                 XmbSettings.freezeBg = freeze
                 freezeMenu()
                 repo.reload()
             }
         }
-        xmb.showMenu("Анимация фона", items)
+        xmb.showMenu(getString(R.string.set_freeze), items)
     }
 
     private fun orderMenu() {
-        val items = listOf(false to "По алфавиту", true to "По частоте").map { (byUsage, label) ->
+        val items = listOf(false to getString(R.string.order_abc), true to getString(R.string.order_usage)).map { (byUsage, label) ->
             XmbView.MenuItem(label, checked = XmbSettings.sortByUsage == byUsage, keepOpen = true) {
                 XmbSettings.sortByUsage = byUsage
                 orderMenu()
                 repo.reload()
             }
         }
-        xmb.showMenu("Порядок в разделах", items)
+        xmb.showMenu(getString(R.string.set_order), items)
     }
 
     /**
@@ -382,23 +385,23 @@ class MainActivity : Activity() {
             }
         }
         if (repo.inDock(entry)) {
-            items += XmbView.MenuItem("Место в доке…") { xmb.post { dockPlaceMenu(entry) } }
-            items += XmbView.MenuItem("Убрать из дока") { repo.removeFromDock(entry) }
+            items += XmbView.MenuItem(getString(R.string.dock_place)) { xmb.post { dockPlaceMenu(entry) } }
+            items += XmbView.MenuItem(getString(R.string.dock_remove)) { repo.removeFromDock(entry) }
         } else if (repo.dock.size < AppRepository.DOCK_SIZE) {
-            items += XmbView.MenuItem("Добавить в док") { repo.addToDock(entry) }
+            items += XmbView.MenuItem(getString(R.string.dock_add)) { repo.addToDock(entry) }
         } else {
-            items += XmbView.MenuItem("В док вместо…") { xmb.post { dockReplaceMenu(entry) } }
+            items += XmbView.MenuItem(getString(R.string.dock_replace)) { xmb.post { dockReplaceMenu(entry) } }
         }
         if (AppRepository.noticesEnabled(this)) {
             val on = cn.packageName !in XmbSettings.badgeOff
-            items += XmbView.MenuItem("Счётчик уведомлений", checked = on) {
+            items += XmbView.MenuItem(getString(R.string.badge_toggle), checked = on) {
                 XmbSettings.badgeOff = if (on) XmbSettings.badgeOff + cn.packageName else XmbSettings.badgeOff - cn.packageName
                 Notices.changed()
             }
         }
-        items += XmbView.MenuItem("Переложить в раздел…") { xmb.post { moveMenu(entry, "В раздел: ${entry.label}") } }
-        items += XmbView.MenuItem("О приложении") { launcherApps.startAppDetailsActivity(cn, entry.user, null, null) }
-        items += XmbView.MenuItem("Удалить") {
+        items += XmbView.MenuItem(getString(R.string.move_to)) { xmb.post { moveMenu(entry, getString(R.string.move_title, entry.label)) } }
+        items += XmbView.MenuItem(getString(R.string.app_info)) { launcherApps.startAppDetailsActivity(cn, entry.user, null, null) }
+        items += XmbView.MenuItem(getString(R.string.uninstall)) {
             open(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", cn.packageName, null)))
         }
         return items
@@ -407,7 +410,7 @@ class MainActivity : Activity() {
     /** Док полон: какое приложение заменить новым. */
     private fun dockReplaceMenu(entry: AppEntry) {
         val items = repo.dock.map { old -> XmbView.MenuItem(old.label, icon = old.icon) { repo.addToDock(entry, replace = old) } }
-        xmb.showMenu("Вместо чего: ${entry.label}", items)
+        xmb.showMenu(getString(R.string.replace_title, entry.label), items)
     }
 
     /** Место в доке по порядку, текущее отмечено. */
@@ -418,14 +421,14 @@ class MainActivity : Activity() {
                 if (i != current) repo.moveInDock(entry, i)
             }
         }
-        xmb.showMenu("Место в доке: ${entry.label}", items)
+        xmb.showMenu(getString(R.string.place_title, entry.label), items)
     }
 
     /** Выбор раздела для приложения; текущий отмечен. В «Частые» не кладут — они собираются сами. */
     private fun moveMenu(entry: AppEntry, title: String) {
         val current = repo.categoryOf(entry)
         val items = Categories.all.filter { it.id != Categories.TOP }.map { c ->
-            XmbView.MenuItem(c.title, checked = c.id == current) {
+            XmbView.MenuItem(getString(c.title), checked = c.id == current) {
                 if (c.id != current) repo.moveTo(entry, c.id)
             }
         }
@@ -437,7 +440,7 @@ class MainActivity : Activity() {
         val entry = repo.takeFresh() ?: return
         val col = repo.sections.indexOfFirst { it.id == repo.categoryOf(entry) }
         if (col >= 0) xmb.reveal(col, repo.columns[col].indexOf(entry))
-        xmb.post { moveMenu(entry, "Новое: ${entry.label}") }
+        xmb.post { moveMenu(entry, getString(R.string.fresh_title, entry.label)) }
     }
 
     /** Пока идёт касание или анимация — просим самый быстрый режим экрана, в покое отдаём выбор системе. */

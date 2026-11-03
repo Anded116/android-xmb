@@ -14,15 +14,11 @@ object XmbSettings {
     const val ICONS_COLOR = "color"
     const val ICON_PACK = "pack:"
 
-    /** Названия тем — по цвету, в скобках месяц, к которому тема привязана на плеере. */
-    val THEME_NAMES = arrayOf(
-        "Серебро (январь)", "Золото (февраль)", "Трава (март)", "Сакура (апрель)", "Изумруд (май)",
-        "Аметист (июнь)", "Бирюза (июль)", "Синий (август)", "Сирень (сентябрь)", "Янтарь (октябрь)",
-        "Каштан (ноябрь)", "Рубин (декабрь)",
-    )
+    // Названия тем (по цвету, в скобках месяц, к которому тема привязана на плеере), фонов и форм значков —
+    // строковые массивы theme_names, style_names, shape_names; номера — их индексы.
+    const val THEMES = 12
     const val SHAPE_SYSTEM = 0
-    val SHAPE_NAMES = arrayOf("Как в системе", "Сквиркл", "Скруглённый квадрат", "Капля")
-    val STYLE_NAMES = arrayOf("Волна PS3", "Спокойный", "Только градиент")
+    const val SHAPES = 4
 
     private const val DEFAULT_THEME = 7
 
@@ -70,7 +66,7 @@ object XmbSettings {
 
     /** Форма цветных значков: системная маска (у Nothing OS — круг) или своя, см. IconShapes. */
     var iconShape: Int
-        get() = prefs.getInt("icon_shape", SHAPE_SYSTEM).coerceIn(0, SHAPE_NAMES.lastIndex)
+        get() = prefs.getInt("icon_shape", SHAPE_SYSTEM).coerceIn(0, SHAPES - 1)
         set(v) = prefs.edit().putInt("icon_shape", v).apply()
 
     /** Док — пять своих приложений снизу (в альбоме — справа); по умолчанию — как в сборке. */
@@ -98,5 +94,7 @@ object XmbSettings {
         }
     private var badgeOffRead = false
 
-    fun themeName(): String = if (theme == THEME_BY_MONTH) "По месяцу, как на PS3" else THEME_NAMES[theme]
+    fun themeName(context: Context): String =
+        if (theme == THEME_BY_MONTH) context.getString(R.string.theme_by_month)
+        else context.resources.getStringArray(R.array.theme_names)[theme]
 }

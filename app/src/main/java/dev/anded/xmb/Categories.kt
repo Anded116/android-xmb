@@ -7,8 +7,8 @@ enum class Glyph { STAR, SETTINGS, CHAT, BANK, MAP, PLAY, BAG, FOOD, GRID, HOME,
     GAMES, PHOTO, NEWS, WORK, BUSINESS, EDU, HEALTH, LIFE, TOOLS,
 }
 
-/** Раздел. always — показывается и пустым («Частые», «Настройки»); остальные пустые скрыты. */
-class Category(val id: String, val title: String, val glyph: Glyph, val always: Boolean = false)
+/** Раздел. title — строковый ресурс; always — показывается и пустым («Частые», «Настройки»), остальные пустые скрыты. */
+class Category(val id: String, val title: Int, val glyph: Glyph, val always: Boolean = false)
 
 /**
  * Разделы — как в «умном» списке приложений Nothing Launcher (Соцсети, Развлечения, Игры, Мультимедиа,
@@ -26,23 +26,23 @@ object Categories {
     const val OTHER = "other"
 
     val all = listOf(
-        Category(TOP, "Частые", Glyph.STAR, always = true),
-        Category(SETTINGS_ID, "Настройки", Glyph.SETTINGS, always = true),
-        Category("chat", "Общение", Glyph.CHAT),
-        Category("fun", "Развлечения", Glyph.PLAY),
-        Category("games", "Игры", Glyph.GAMES),
-        Category("photo", "Фото и видео", Glyph.PHOTO),
-        Category("news", "Чтение", Glyph.NEWS),
-        Category("shop", "Покупки", Glyph.BAG),
-        Category("banks", "Финансы", Glyph.BANK),
-        Category("maps", "Путешествия", Glyph.MAP),
-        Category("work", "Работа", Glyph.WORK),
-        Category("business", "Бизнес", Glyph.BUSINESS),
-        Category("edu", "Учёба", Glyph.EDU),
-        Category("health", "Здоровье", Glyph.HEALTH),
-        Category("life", "Образ жизни", Glyph.LIFE),
-        Category("tools", "Утилиты", Glyph.TOOLS),
-        Category(OTHER, "Прочее", Glyph.GRID),
+        Category(TOP, R.string.sec_top, Glyph.STAR, always = true),
+        Category(SETTINGS_ID, R.string.sec_settings, Glyph.SETTINGS, always = true),
+        Category("chat", R.string.sec_chat, Glyph.CHAT),
+        Category("fun", R.string.sec_fun, Glyph.PLAY),
+        Category("games", R.string.sec_games, Glyph.GAMES),
+        Category("photo", R.string.sec_photo, Glyph.PHOTO),
+        Category("news", R.string.sec_news, Glyph.NEWS),
+        Category("shop", R.string.sec_shop, Glyph.BAG),
+        Category("banks", R.string.sec_banks, Glyph.BANK),
+        Category("maps", R.string.sec_maps, Glyph.MAP),
+        Category("work", R.string.sec_work, Glyph.WORK),
+        Category("business", R.string.sec_business, Glyph.BUSINESS),
+        Category("edu", R.string.sec_edu, Glyph.EDU),
+        Category("health", R.string.sec_health, Glyph.HEALTH),
+        Category("life", R.string.sec_life, Glyph.LIFE),
+        Category("tools", R.string.sec_tools, Glyph.TOOLS),
+        Category(OTHER, R.string.sec_other, Glyph.GRID),
     )
 
     private val LEGACY = mapOf("food" to "life")

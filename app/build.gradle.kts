@@ -5,13 +5,13 @@ plugins {
 
 android {
     namespace = "dev.anded.xmb"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.anded.xmb"
         // RuntimeShader (AGSL) появился в Android 13.
         minSdk = 33
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1"
     }
