@@ -163,7 +163,10 @@ powershell -File build.ps1 -Install -Flavor store   # то же для store
 или `ANDROID_HOME`); AGP 8.9, Kotlin 2.0, Gradle 8.11 скачает wrapper. Свои пути можно положить в `local.ps1` рядом с `build.ps1` —
 он не в git и выполняется перед сборкой. Без PowerShell: `./gradlew assembleRelease`.
 
-Release подписан отладочным ключом — сборка прототипа, но с R8 и без debuggable, чтобы мерить плавность честно.
+Release собирается с R8 и без debuggable, чтобы мерить плавность честно. Подпись — ключом загрузки из
+`keystore.properties` (не в git, образец — `keystore.properties.example`), без него — отладочным ключом.
+AAB для Play: `powershell -File build.ps1 -Bundle -Flavor store`. Всё для выпуска — в `docs/play/`:
+политика конфиденциальности, ответы Data safety, тексты страницы, чек-лист.
 
 ## Производительность
 

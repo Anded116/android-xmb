@@ -2,10 +2,12 @@
 #   .\build.ps1                        — собрать release обеих сборок
 #   .\build.ps1 -Install [-Serial ID]  — собрать и поставить личную (full) на устройство
 #   .\build.ps1 -Install -Flavor store — то же для сборки под Google Play
+#   .\build.ps1 -Bundle -Flavor store  — AAB для загрузки в Play (подпись — keystore.properties)
 # Нужны JDK 17 (JAVA_HOME) и Android SDK (sdk.dir в local.properties или ANDROID_HOME).
 # Свои пути можно положить в local.ps1 рядом — он не в git и выполняется перед сборкой.
 param(
     [switch]$Install,
+    [switch]$Bundle,
     [string]$Serial = "",
     [ValidateSet("full", "store")]
     [string]$Flavor = "full",
@@ -15,7 +17,8 @@ $ErrorActionPreference = "Stop"
 $local = Join-Path $PSScriptRoot "local.ps1"
 if (Test-Path $local) { . $local }
 
-if (-not $Task) { $Task = if ($Install) { "assemble$((Get-Culture).TextInfo.ToTitleCase($Flavor))Release" } else { "assembleRelease" } }
+$name = (Get-Culture).TextInfo.ToTitleCase($Flavor)
+if (-not $Task) { $Task = if ($Bundle) { "bundle${name}Release" } elseif ($Install) { "assemble${name}Release" } else { "assembleRelease" } }
 & "$PSScriptRoot\gradlew.bat" -p $PSScriptRoot $Task --console=plain
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

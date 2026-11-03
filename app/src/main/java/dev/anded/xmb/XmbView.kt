@@ -70,6 +70,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     var onBusy: (Boolean) -> Unit = {}
     var onOpenEvent: (NextEvent) -> Unit = {}
     var onSearch: () -> Unit = {}
+    var onHintsClosed: () -> Unit = {}
 
     /** Ближайшее событие календаря для карточки «Сейчас»; null — нет или нет разрешения. */
     var calendar: NextEvent? = null
@@ -441,9 +442,14 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     fun closeHints(): Boolean {
         if (!hintsOpen) return false
+        hideHints()
+        return true
+    }
+
+    private fun hideHints() {
         hintsOpen = false
         invalidate()
-        return true
+        onHintsClosed()
     }
 
     fun closeMenu(): Boolean {
@@ -1081,7 +1087,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         lastTouch = System.nanoTime()
         if (e.actionMasked == MotionEvent.ACTION_DOWN) BgBus.touch()
         if (hintsOpen) {
-            if (e.actionMasked == MotionEvent.ACTION_UP) hintsOpen = false
+            if (e.actionMasked == MotionEvent.ACTION_UP) hideHints()
             invalidate()
             return true
         }
@@ -1330,7 +1336,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         BgBus.touch()
         invalidate()
         if (hintsOpen) {
-            hintsOpen = false
+            hideHints()
             return true
         }
         if (menuOpen) return menuKey(code)

@@ -6,3 +6,8 @@ local.ps1
 *.apk
 .idea/
 *.iml
+
+# Ключ загрузки для Play и его пароли
+keystore.properties
+*.jks
+*.keystore

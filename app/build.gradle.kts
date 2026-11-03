@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -29,12 +31,24 @@ android {
         }
     }
 
+    // Ключ загрузки для Google Play — в keystore.properties в корне (не в git, как и сам ключ):
+    // storeFile, storePassword, keyAlias, keyPassword. Нет файла — release подписан отладочным ключом.
+    val keystore = rootProject.file("keystore.properties")
+    if (keystore.exists()) {
+        val p = Properties().apply { keystore.inputStream().use(::load) }
+        signingConfigs.create("upload") {
+            storeFile = rootProject.file(p.getProperty("storeFile"))
+            storePassword = p.getProperty("storePassword")
+            keyAlias = p.getProperty("keyAlias")
+            keyPassword = p.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Прототип: release ради скорости R8/ART, подпись отладочным ключом.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {

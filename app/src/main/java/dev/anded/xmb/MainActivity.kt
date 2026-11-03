@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.app.ActivityOptions
 import android.app.WallpaperManager
+import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
@@ -72,6 +73,13 @@ class MainActivity : Activity() {
         search.onLaunch = ::launch
         xmb.onOpenEvent = { open(it.openIntent()) }
         xmb.onSearch = ::toggleSearch
+        // Первый запуск: после подсказок — один раз предложить стать домашним экраном.
+        xmb.onHintsClosed = {
+            if (!repo.prefs.getBoolean(PREF_ASKED_HOME, false)) {
+                repo.prefs.edit().putBoolean(PREF_ASKED_HOME, true).apply()
+                if (!isHome()) requestHome()
+            }
+        }
         setContentView(FrameLayout(this).apply {
             addView(xmb)
             addView(search)
@@ -245,6 +253,25 @@ class MainActivity : Activity() {
     }
 
     @Deprecated("Activity API")
+    private fun isHome(): Boolean = getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_HOME) == true
+
+    /** Системный диалог «Сделать лаунчером по умолчанию»; если система его уже не покажет — страница выбора. */
+    private fun requestHome() {
+        val rm = getSystemService(RoleManager::class.java)
+        if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_HOME) && !rm.isRoleHeld(RoleManager.ROLE_HOME)) {
+            runCatching { startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_HOME), REQ_HOME) }
+                .onFailure { open(Intent(Settings.ACTION_HOME_SETTINGS)) }
+        } else {
+            open(Intent(Settings.ACTION_HOME_SETTINGS))
+        }
+    }
+
+    @Deprecated("Activity API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_HOME) repo.reload()
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         refreshCalendar()
@@ -253,7 +280,7 @@ class MainActivity : Activity() {
 
     private fun launch(entry: AppEntry, bounds: Rect) {
         when (entry.special) {
-            "home" -> open(Intent(Settings.ACTION_HOME_SETTINGS))
+            "home" -> requestHome()
             "key" -> open(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             "reset" -> repo.resetLayout()
             "look" -> lookMenu()
@@ -498,6 +525,8 @@ class MainActivity : Activity() {
     companion object {
         private const val PREF_LAST = "last_category"
         private const val PREF_HINTS = "hints_shown"
+        private const val PREF_ASKED_HOME = "asked_home"
+        private const val REQ_HOME = 2
         const val EXTRA_KEY = "dev.anded.xmb.KEY"
         const val KEY_SEARCH = "search"
     }
