@@ -27,16 +27,16 @@ object AppGlyphs {
         "com.xiaomi.smarthome" -> context.getDrawable(R.drawable.app_xiaomihome)
         "org.mozilla.focus" -> context.getDrawable(R.drawable.app_focus)
         "ru.uec.strelka" -> context.getDrawable(R.drawable.app_strelka)
-        "com.tredir.app" -> context.getDrawable(R.drawable.app_tredir)
         "com.bybit.app" -> TextGlyph("BYBIT")
         "com.alibaba.aliexpresshd" -> TextGlyph("Ali")
         "com.epicgames.portal" -> TextGlyph("EPIC")
-        "com.happproxy" -> TextGlyph("Happ")
-        "com.mediacube.garna" -> TextGlyph("Garna")
         "com.wildberries.ru" -> TextGlyph("WB")
         "ru.ozon.app.android" -> TextGlyph("OZON")
-        else -> null
+        else -> Edition.glyph(context, pkg)
     }
+
+    /** Логотип-надпись — для значков, которые проще набрать, чем нарисовать. */
+    fun text(s: String): Drawable = TextGlyph(s)
 
     /** Надпись по центру, сжатая по ширине: не шире 20 единиц из 24, заглавные — не выше 10. */
     private class TextGlyph(private val text: String) : Drawable() {

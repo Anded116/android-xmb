@@ -4,6 +4,4 @@
     <string name="wallpaper_label">XMB</string>
     <string name="wallpaper_description">Фон XMB: градиент темы, волна PS3 и искры. С ним фон лаунчера остаётся на месте в многозадачности.</string>
     <string name="notices_label">XMB: значки уведомлений</string>
-    <string name="key_service_label">XMB: кнопка Essential</string>
-    <string name="key_service_description">Нажатие кнопки Essential открывает поиск приложений из любого места, удержание поворачивает экран. Служба видит только эту кнопку и имя приложения на экране (для недавних в поиске), содержимое окон не читает.</string>
 </resources>

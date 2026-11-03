@@ -41,9 +41,14 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
     private val icons = ConcurrentHashMap<String, Bitmap>()
     private val requested = AtomicInteger()
 
-    @Volatile var focusColumn = Categories.DEFAULT
+    /** Раздел на экране (id) — его значки рисуются первыми. */
+    @Volatile var focusColumn = Categories.TOP
 
-    var columns: List<List<AppEntry>> = List(Categories.all.size) { emptyList() }
+    /** Видимые разделы: пустые скрыты, «Частые» и «Настройки» — всегда; columns — их колонки. */
+    var sections: List<Category> = Categories.all.filter { it.always }
+        private set
+
+    var columns: List<List<AppEntry>> = List(sections.size) { emptyList() }
         private set
 
     /** Док — свои пять приложений; пока его не настраивали — самые частые. */
@@ -126,7 +131,10 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             val built = build()
             val sc = buildShortcuts()
             main.post {
-                columns = withUsage(built)
+                val all = withUsage(built)
+                val keep = Categories.all.indices.filter { Categories.all[it].always || all[it].isNotEmpty() }
+                sections = keep.map { Categories.all[it] }
+                columns = keep.map { all[it] }
                 shortcuts = sc
                 onChanged()
             }
@@ -168,7 +176,9 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             .distinctBy { it.first.component!!.packageName }
             .map { it.first }
         val saved = prefs.getString(PREF_DOCK, null)
-        dock = if (saved == null) {
+        dock = if (!XmbSettings.dock) {
+            emptyList()
+        } else if (saved == null) {
             top.take(DOCK_SIZE)
         } else {
             val byKey = apps.associateBy { it.key }
@@ -202,8 +212,9 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         return null
     }
 
-    /** Раздел, куда сейчас положено приложение (без «Частых»). */
-    fun categoryOf(entry: AppEntry): Int = columns.indices.drop(1).firstOrNull { entry in columns[it] } ?: Categories.all.lastIndex
+    /** Раздел (id), куда сейчас положено приложение (без «Частых»). */
+    fun categoryOf(entry: AppEntry): String =
+        columns.indices.drop(1).firstOrNull { entry in columns[it] }?.let { sections[it].id } ?: Categories.OTHER
 
     /** Ярлыки приложения для меню долгого тапа: сначала динамические (свежие чаты), потом объявленные. */
     fun shortcutsFor(entry: AppEntry): List<ShortcutInfo> {
@@ -283,6 +294,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             special("theme", "Тема", Glyph.THEME, XmbSettings.themeName()),
             special("style", "Фон", Glyph.WAVE, XmbSettings.STYLE_NAMES[XmbSettings.style]),
             special("freeze", "Анимация фона", Glyph.WAVE, if (XmbSettings.freezeBg) "Замирает через 30 с покоя" else "Всегда"),
+            special("dock", "Док", Glyph.GRID, if (XmbSettings.dock) "Пять своих приложений внизу" else "Выключен"),
             special("order", "Порядок в разделах", Glyph.GRID, if (XmbSettings.sortByUsage) "По частоте" else "По алфавиту"),
             special("icons", "Значки", Glyph.ICONS, iconName),
             special("shape", "Форма значков", Glyph.ICONS, XmbSettings.SHAPE_NAMES[XmbSettings.iconShape]),
@@ -303,12 +315,14 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
                 "home", "Домашний экран", Glyph.HOME,
                 if (home) "XMB — лаунчер по умолчанию" else "Сделать XMB лаунчером по умолчанию",
             ),
-            special(
-                "key", "Кнопка Essential", Glyph.KEY,
-                if (key) "Нажатие: поиск. Удержание: поворот экрана" else "Выключена — включить в спец. возможностях",
-            ),
+            Edition.keyService(context)?.let {
+                special(
+                    "key", "Кнопка Essential", Glyph.KEY,
+                    if (key) "Нажатие: поиск. Удержание: поворот экрана" else "Выключена — включить в спец. возможностях",
+                )
+            },
             special("reset", "Сбросить раскладку", Glyph.RESET, "Вернуть приложения в разделы по умолчанию"),
-        )
+        ).filterNotNull()
     }
 
     private fun special(id: String, label: String, glyph: Glyph, subtitle: String): AppEntry {
@@ -319,7 +333,8 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
     }
 
     private fun loadIcons(cols: List<List<AppEntry>>, ticket: Int) {
-        val order = cols.indices.sortedBy { abs(it - focusColumn) }
+        val focus = Categories.indexOf(focusColumn)
+        val order = cols.indices.sortedBy { abs(it - focus) }
         var batch = 0
         for (c in order) for (e in cols[c]) {
             if (e.icon != null) continue
@@ -455,7 +470,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             WallpaperManager.getInstance(context).wallpaperInfo?.packageName == context.packageName
 
         fun isKeyServiceEnabled(context: Context): Boolean {
-            val me = ComponentName(context, EssentialKeyService::class.java)
+            val me = Edition.keyService(context) ?: return false
             val enabled = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
                 ?: return false
             return enabled.split(':').any { ComponentName.unflattenFromString(it) == me }

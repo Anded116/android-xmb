@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="key_service_label">XMB: кнопка Essential</string>
+    <string name="key_service_description">Нажатие кнопки Essential открывает поиск приложений из любого места, удержание поворачивает экран. Служба видит только эту кнопку и имя приложения на экране (для недавних в поиске), содержимое окон не читает.</string>
+</resources>

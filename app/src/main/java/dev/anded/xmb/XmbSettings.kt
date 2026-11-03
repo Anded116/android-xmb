@@ -73,6 +73,11 @@ object XmbSettings {
         get() = prefs.getInt("icon_shape", SHAPE_SYSTEM).coerceIn(0, SHAPE_NAMES.lastIndex)
         set(v) = prefs.edit().putInt("icon_shape", v).apply()
 
+    /** Док — пять своих приложений снизу (в альбоме — справа); по умолчанию — как в сборке. */
+    var dock: Boolean
+        get() = prefs.getBoolean("dock_on", Edition.DOCK)
+        set(v) = prefs.edit().putBoolean("dock_on", v).apply()
+
     var icons: String
         get() = prefs.getString("icons", ICONS_SYSTEM) ?: ICONS_SYSTEM
         set(v) = prefs.edit().putString("icons", v).apply()

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Временное имя: название для Play ещё не выбрано; «XMB» и «PS3» в нём быть не должно. -->
+    <string name="app_name">XMB Store</string>
+</resources>

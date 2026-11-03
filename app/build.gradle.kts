@@ -16,6 +16,19 @@ android {
         versionName = "0.1"
     }
 
+    // full — личная (кнопка Essential через спец. возможности, поворот экрана, свои значки);
+    // store — для Google Play: без службы спец. возможностей, имя и идентификатор временные.
+    flavorDimensions += "edition"
+    productFlavors {
+        create("full") {
+            dimension = "edition"
+        }
+        create("store") {
+            dimension = "edition"
+            applicationIdSuffix = ".store"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

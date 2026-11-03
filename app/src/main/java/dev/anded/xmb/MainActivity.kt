@@ -49,21 +49,22 @@ class MainActivity : Activity() {
         xmb = XmbView(this, iconPx)
         search = SearchLayer(this, iconPx)
         repo = AppRepository(this, iconPx) {
-            xmb.setColumns(repo.columns, repo.dock)
+            xmb.setColumns(repo.columns, repo.sections, repo.dock)
             // «Частые» повторяют приложения из разделов — в поиске по одному разу; плюс ярлыки приложений.
             search.entries = repo.columns.flatten().filter { it.special == null }.distinctBy { it.key } + repo.shortcuts
             if (!wasStopped) askFresh()
         }
 
-        val start = Categories.indexOf(repo.prefs.getString(PREF_LAST, Categories.all[Categories.DEFAULT].id))
-        xmb.setCategory(start, animate = false)
+        val start = repo.prefs.getString(PREF_LAST, Categories.TOP) ?: Categories.TOP
+        xmb.restoreSection(start)
         repo.focusColumn = start
-        xmb.onCategory = { repo.focusColumn = it }
+        xmb.onCategory = { repo.focusColumn = xmb.sectionId() }
         xmb.onLaunch = ::launch
         xmb.onMenu = ::menuFor
         xmb.onBusy = ::setFast
         search.onLaunch = ::launch
         xmb.onOpenEvent = { open(it.openIntent()) }
+        xmb.onSearch = ::toggleSearch
         setContentView(FrameLayout(this).apply {
             addView(xmb)
             addView(search)
@@ -81,17 +82,21 @@ class MainActivity : Activity() {
      * закрытие (кнопкой или «назад») возвращает в него.
      */
     private fun handleKey(intent: Intent?) {
-        if (intent?.getStringExtra(EXTRA_KEY) == KEY_SEARCH) {
-            xmb.closeMenu()
-            if (search.open) {
-                closeSearch()
-            } else {
-                searchFrom = if (wasStopped) AppHistory.all().firstOrNull() else null
-                search.fallback = repo.columns[xmb.category]
-                search.show()
-            }
-        }
+        if (intent?.getStringExtra(EXTRA_KEY) == KEY_SEARCH) toggleSearch()
         intent?.removeExtra(EXTRA_KEY)
+    }
+
+    private fun toggleSearch() {
+        xmb.closeMenu()
+        if (search.open) {
+            closeSearch()
+        } else {
+            searchFrom = if (wasStopped) AppHistory.all().firstOrNull() else null
+            // Пока «Частые» не набрались (свежая установка) — все приложения, а не пустой ряд.
+            search.fallback = repo.columns[xmb.category].takeIf { col -> col.any { it.special == null } }
+                ?: repo.columns.flatten().filter { it.special == null }.distinctBy { it.key }
+            search.show()
+        }
     }
 
     private fun closeSearch() {
@@ -161,7 +166,7 @@ class MainActivity : Activity() {
         super.onPause()
         xmb.setActive(false)
         setFast(false)
-        repo.prefs.edit().putString(PREF_LAST, Categories.all[xmb.category].id).apply()
+        repo.prefs.edit().putString(PREF_LAST, xmb.sectionId()).apply()
     }
 
     override fun onStop() {
@@ -220,6 +225,7 @@ class MainActivity : Activity() {
             "shape" -> shapeMenu()
             "order" -> orderMenu()
             "freeze" -> freezeMenu()
+            "dock" -> dockMenu()
             "notices" -> open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             "calendar" -> if (NextEvent.granted(this)) refreshCalendar() else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 1)
             "hints" -> xmb.showHints()
@@ -327,6 +333,17 @@ class MainActivity : Activity() {
         xmb.showMenu("Форма значков", items)
     }
 
+    private fun dockMenu() {
+        val items = listOf(true to "Показывать", false to "Выключить").map { (on, label) ->
+            XmbView.MenuItem(label, checked = XmbSettings.dock == on, keepOpen = true) {
+                XmbSettings.dock = on
+                dockMenu()
+                repo.reload()
+            }
+        }
+        xmb.showMenu("Док", items)
+    }
+
     private fun freezeMenu() {
         val items = listOf(true to "Замирать через 30 с покоя", false to "Всегда").map { (freeze, label) ->
             XmbView.MenuItem(label, checked = XmbSettings.freezeBg == freeze, keepOpen = true) {
@@ -407,10 +424,9 @@ class MainActivity : Activity() {
     /** Выбор раздела для приложения; текущий отмечен. В «Частые» не кладут — они собираются сами. */
     private fun moveMenu(entry: AppEntry, title: String) {
         val current = repo.categoryOf(entry)
-        val items = Categories.all.mapIndexedNotNull { i, c ->
-            if (c.id == Categories.TOP) return@mapIndexedNotNull null
-            XmbView.MenuItem(c.title, checked = i == current) {
-                if (i != current) repo.moveTo(entry, c.id)
+        val items = Categories.all.filter { it.id != Categories.TOP }.map { c ->
+            XmbView.MenuItem(c.title, checked = c.id == current) {
+                if (c.id != current) repo.moveTo(entry, c.id)
             }
         }
         xmb.showMenu(title, items)
@@ -419,8 +435,8 @@ class MainActivity : Activity() {
     /** Только что установленное приложение: показать, куда оно легло, и спросить, туда ли. */
     private fun askFresh() {
         val entry = repo.takeFresh() ?: return
-        val col = repo.categoryOf(entry)
-        xmb.reveal(col, repo.columns[col].indexOf(entry))
+        val col = repo.sections.indexOfFirst { it.id == repo.categoryOf(entry) }
+        if (col >= 0) xmb.reveal(col, repo.columns[col].indexOf(entry))
         xmb.post { moveMenu(entry, "Новое: ${entry.label}") }
     }
 

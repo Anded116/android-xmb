@@ -68,6 +68,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     var onCategory: (Int) -> Unit = {}
     var onBusy: (Boolean) -> Unit = {}
     var onOpenEvent: (NextEvent) -> Unit = {}
+    var onSearch: () -> Unit = {}
 
     /** Ближайшее событие календаря для карточки «Сейчас»; null — нет или нет разрешения. */
     var calendar: NextEvent? = null
@@ -80,8 +81,13 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private val dp = metrics.density
     private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, metrics)
 
-    private val count = Categories.all.size
+    // Видимые разделы приходят из репозитория вместе с колонками; пустые скрыты, число меняется.
+    private var sections: List<Category> = Categories.all.filter { it.always }
+    private var count = sections.size
     private var columns: List<List<AppEntry>> = List(count) { emptyList() }
+
+    // Раздел, сохранённый с прошлого раза: применяется, как только он появится среди видимых.
+    private var pendingSection: String? = null
 
     // Док — 5 самых частых: снизу в портрете, вертикально у правого края в альбоме.
     private var dock: List<AppEntry> = emptyList()
@@ -91,7 +97,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private var pressDock = -1
 
     // Разделы, где есть уведомления: точка на значке раздела. Пересчёт — при смене уведомлений или списка.
-    private val catBadge = BooleanArray(count)
+    private var catBadge = BooleanArray(count)
     private val noticeListener: () -> Unit = {
         refreshBadges()
         invalidate()
@@ -108,9 +114,9 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private var hintsOpen = false
 
     // Позиция колонки — индекс пункта на месте выбранного (дробный во время движения).
-    private val pos = FloatArray(count)
-    private val posVel = FloatArray(count)
-    private val posTarget = IntArray(count)
+    private var pos = FloatArray(count)
+    private var posVel = FloatArray(count)
+    private var posTarget = IntArray(count)
 
     // Размеры зависят от ориентации (onSizeChanged); значки разделов рисуются один раз в размере catBase.
     private val catBase = 60 * dp
@@ -129,7 +135,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private var topInset = 0
     private var bottomInset = 0
 
-    var category = Categories.DEFAULT
+    var category = 0
         private set
     private var catPos = category.toFloat()
     private var catVel = 0f
@@ -150,6 +156,11 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private var pressIndex = -1
     private var pressCat = -1
     private var stoppedFling = false
+
+    // Двойной тап по пустому месту — поиск: время и место первого тапа.
+    private var lastEmptyTap = 0L
+    private var emptyTapX = 0f
+    private var emptyTapY = 0f
     private var launched = false
     private var velocity: VelocityTracker? = null
     private val slop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
@@ -305,9 +316,12 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         invalidate()
     }
 
-    fun setColumns(cols: List<List<AppEntry>>, dockApps: List<AppEntry>) {
+    fun setColumns(cols: List<List<AppEntry>>, secs: List<Category>, dockApps: List<AppEntry>) {
+        if (secs.map { it.id } != sections.map { it.id }) resizeSections(secs)
         columns = cols
+        val relayout = dock.isEmpty() != dockApps.isEmpty()
         dock = dockApps
+        if (relayout && width > 0) onSizeChanged(width, height, width, height)
         refreshBadges()
         if (pressCol >= 0 && pressIndex >= columns[pressCol].size) pressIndex = -1
         for (c in 0 until count) {
@@ -317,6 +331,47 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         }
         invalidate()
     }
+
+    /** Набор видимых разделов сменился: состояние колонок переносится по id, текущий раздел остаётся тем же. */
+    private fun resizeSections(secs: List<Category>) {
+        val keep = pendingSection ?: sections.getOrNull(category)?.id
+        val oldIds = sections.map { it.id }
+        val oldPos = pos
+        val oldTarget = posTarget
+        sections = secs
+        count = secs.size
+        pos = FloatArray(count)
+        posVel = FloatArray(count)
+        posTarget = IntArray(count)
+        catBadge = BooleanArray(count)
+        for (j in 0 until count) {
+            val o = oldIds.indexOf(secs[j].id)
+            if (o >= 0) {
+                pos[j] = oldPos[o]
+                posTarget[j] = oldTarget[o]
+            }
+        }
+        val found = secs.indexOfFirst { it.id == keep }
+        if (found >= 0 && keep == pendingSection) pendingSection = null
+        val t = if (found >= 0) found else category.coerceIn(0, count - 1)
+        category = t
+        catPos = t.toFloat()
+        catVel = 0f
+        tickIndex = t
+        itemTick = pos[t].roundToInt()
+        drag = Drag.NONE
+        pressCol = -1
+        pressIndex = -1
+        pressCat = -1
+    }
+
+    /** Вернуть раздел с прошлого раза; если он ещё не загрузился — как только появится. */
+    fun restoreSection(id: String) {
+        val i = sections.indexOfFirst { it.id == id }
+        if (i >= 0) setCategory(i, animate = false) else pendingSection = id
+    }
+
+    fun sectionId(): String = sections.getOrNull(category)?.id ?: Categories.TOP
 
     fun setCategory(index: Int, animate: Boolean = true) {
         val t = index.coerceIn(0, count - 1)
@@ -348,7 +403,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     private fun refreshBadges() {
         for (c in 0 until count) {
-            catBadge[c] = c != Categories.SETTINGS && columns[c].any { Notices.count(it.component?.packageName) > 0 }
+            catBadge[c] = sections[c].id != Categories.SETTINGS_ID && columns[c].any { Notices.count(it.component?.packageName) > 0 }
         }
     }
 
@@ -400,8 +455,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         barY = if (landscape) clockBase + STATUS_GAP * dp + catBig * ROW_TOP else h * 0.30f
         selY = barY + (if (landscape) 82 else 104) * dp
         aboveY = barY - (if (landscape) 64 else 80) * dp
-        dockH = if (landscape) 0f else 96 * dp
-        dockW = if (landscape) 76 * dp else 0f
+        dockH = if (landscape || dock.isEmpty()) 0f else 96 * dp
+        dockW = if (landscape && dock.isNotEmpty()) 76 * dp else 0f
         textX = focusX + iconDraw / 2f + 16 * dp
         textMaxW = w - textX - 20 * dp - dockW
         dockShader = if (landscape || look != Look.XMB) null else LinearGradient(
@@ -589,7 +644,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val edge = if (dockW > 0f) ((width - dockW - x) / (catSpacing * 0.5f)).coerceIn(0f, 1f) else 1f
             if (edge <= 0f) continue
             val size = catBig + (catSmall - catBig) * t
-            val glyph = Categories.all[i].glyph
+            val glyph = sections[i].glyph
             val half = (catBase / 2 + catPad) * size / catBase
             dst.set(x - half, barY - half, x + half, barY + half)
             if (d < 1f && look != Look.NOTHING) {
@@ -607,7 +662,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val la = (1f - d * 1.8f).coerceIn(0f, 1f)
             if (la > 0f) {
                 catLabelPaint.fade((la * 255).toInt())
-                canvas.drawText(Categories.all[i].title, x, barY + catBig / 2 + 26 * dp, catLabelPaint)
+                canvas.drawText(sections[i].title, x, barY + catBig / 2 + 26 * dp, catLabelPaint)
             }
         }
     }
@@ -856,12 +911,19 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         dimPaint.alpha = 215
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dimPaint)
         val x = 32 * dp
-        var y = topInset + max(48 * dp, (height - topInset - HINTS.size * 80 * dp - 120 * dp) / 2)
+        val hints = HINTS.filter { (title, _) ->
+            when (title) {
+                HINT_KEY -> Edition.keyService(context) != null
+                HINT_DOCK -> dock.isNotEmpty()
+                else -> true
+            }
+        }
+        var y = topInset + max(48 * dp, (height - topInset - hints.size * 80 * dp - 120 * dp) / 2)
         menuTitlePaint.fade(255)
         canvas.drawText("Как пользоваться XMB", x, y, menuTitlePaint)
         y += 44 * dp
         val w = width - x * 2
-        for ((title, text) in HINTS) {
+        for ((title, text) in hints) {
             menuItemPaint.fade(255)
             canvas.drawText(title, x, y, menuItemPaint)
             subPaint.fade(190)
@@ -1198,7 +1260,19 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             }
             return
         }
-        val entry = columns.getOrNull(pressCol)?.getOrNull(pressIndex) ?: return
+        val entry = columns.getOrNull(pressCol)?.getOrNull(pressIndex)
+        if (entry == null) {
+            val now = System.nanoTime()
+            if (now - lastEmptyTap < DOUBLE_TAP_NS && hypot(downX - emptyTapX, downY - emptyTapY) < 48 * dp) {
+                lastEmptyTap = 0L
+                onSearch()
+            } else {
+                lastEmptyTap = now
+                emptyTapX = downX
+                emptyTapY = downY
+            }
+            return
+        }
         val y = itemY(pressIndex - pos[pressCol]).toInt()
         val half = (iconDraw / 2).toInt()
         launchRect.set(focusX.toInt() - half, y - half, focusX.toInt() + half, y + half)
@@ -1289,12 +1363,16 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         const val CARD_NEXT = 2
         const val CARD_MEDIA = 3
         const val CARD_EVENT = 4
+        const val HINT_KEY = "Кнопка Essential"
+        const val HINT_DOCK = "Док"
+        const val DOUBLE_TAP_NS = 320_000_000L
         val HINTS = listOf(
             "Свайп по колонке" to "Соседний раздел; по ряду значков — сразу через несколько",
+            "Двойной тап по пустому месту" to "Поиск приложений",
             "Правый край колонки" to "Быстрая прокрутка длинного раздела с буквами",
             "Долгий тап" to "Ярлыки приложения: чаты, действия; перенос в раздел",
-            "Кнопка Essential" to "Нажатие — поиск, повторное — обратно; удержание — поворот экрана",
-            "Док внизу" to "Свои пять приложений: долгий тап по приложению — добавить, убрать, переставить",
+            HINT_KEY to "Нажатие — поиск, повторное — обратно; удержание — поворот экрана",
+            HINT_DOCK to "Свои пять приложений: долгий тап по приложению — добавить, убрать, переставить",
             "«Настройки» XMB" to "Тема, фон, значки, уведомления, календарь, эти подсказки",
         )
     }
