@@ -13,8 +13,8 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.inputmethod.InputMethodManager
 
 /**
- * Кнопка Essential как кнопка PS: нажатие — в XMB из любого приложения (в самом XMB — закрыть поиск и меню),
- * удержание — поиск приложений. Заодно служба ведёт историю приложений на экране для поиска.
+ * Кнопка Essential: нажатие — поиск приложений из любого места (повторное — закрыть), удержание — поворот экрана.
+ * Заодно служба ведёт историю приложений на экране для поиска.
  * Кнопка приходит в фильтр ключей спец. возможностей как KEYCODE_UNKNOWN.
  */
 class EssentialKeyService : AccessibilityService() {
@@ -24,17 +24,19 @@ class EssentialKeyService : AccessibilityService() {
     private var homes: Set<String> = emptySet()
     private var ignored: Set<String> = emptySet()
     private val launchable = HashMap<String, Boolean>()
+    private val rotation by lazy { Rotation(this) }
     private val hold = Runnable {
         holdFired = true
-        buzz()
-        onHold()
+        if (rotation.toggle()) buzz()
     }
 
     override fun onServiceConnected() {
         AppHistory.init(this)
+        // Домашние экраны в историю не пишем. Отрицательный приоритет — запасные вроде FallbackHome «Настроек»:
+        // без отсева «Настройки» тоже считались бы лаунчером и пропадали из недавних.
         homes = packageManager.queryIntentActivities(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_ALL,
-        ).map { it.activityInfo.packageName }.toSet() - packageName
+        ).filter { it.priority >= 0 }.map { it.activityInfo.packageName }.toSet()
         ignored = setOf("android", "com.android.systemui", "com.nothing.ntessentialspace", "com.nothing.ntessentialrecorder") +
             getSystemService(InputMethodManager::class.java).inputMethodList.map { it.packageName }
     }
@@ -43,7 +45,7 @@ class EssentialKeyService : AccessibilityService() {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
         when {
-            pkg == packageName || pkg in homes -> AppHistory.foreground = pkg
+            pkg in homes -> AppHistory.home()
             pkg in ignored -> Unit
             launchable.getOrPut(pkg) { packageManager.getLaunchIntentForPackage(pkg) != null } -> AppHistory.moveToFront(pkg)
         }
@@ -59,7 +61,7 @@ class EssentialKeyService : AccessibilityService() {
             }
             KeyEvent.ACTION_UP -> {
                 handler.removeCallbacks(hold)
-                if (!holdFired) onTap()
+                if (!holdFired) search()
             }
         }
         return true
@@ -67,35 +69,13 @@ class EssentialKeyService : AccessibilityService() {
 
     override fun onInterrupt() = Unit
 
-    private fun inHome(): Boolean {
-        val fg = AppHistory.foreground
-        return fg == null || fg == packageName || fg in homes
-    }
 
-    private fun onTap() {
-        if (inHome()) toXmb(MainActivity.KEY_TAP) else openXmb()
-    }
-
-    private fun onHold() = toXmb(MainActivity.KEY_SEARCH)
-
-    private fun toXmb(key: String) {
+    private fun search() {
         startActivity(
             Intent(this, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_KEY, key)
+                .putExtra(MainActivity.EXTRA_KEY, MainActivity.KEY_SEARCH)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
-    }
-
-    private fun openXmb() {
-        val home = packageManager.resolveActivity(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY,
-        )?.activityInfo?.packageName
-        // Если XMB — домашний экран, системный «домой» даёт родную анимацию сворачивания.
-        if (home == packageName) {
-            performGlobalAction(GLOBAL_ACTION_HOME)
-        } else {
-            startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
     }
 
     private fun buzz() {

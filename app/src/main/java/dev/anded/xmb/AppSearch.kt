@@ -6,7 +6,7 @@ import kotlin.math.min
  * Поиск приложений «как на iOS»: без запроса — последние открытые, с запросом — по смыслу совпадения.
  * Понимает латиницу вместо кириллицы и наоборот («sber» → «СберБанк»), набор не в той раскладке
  * («ыиук» → «sber»), первые буквы слов («тб» → «Т-Банк»), слова из имени пакета и одну опечатку.
- * Среди равных выше то, что открывали недавно.
+ * Среди равных выше то, что открывали недавно. Ищет и ярлыки приложений — чаты, действия.
  */
 object AppSearch {
 
@@ -24,7 +24,7 @@ object AppSearch {
     fun recent(entries: List<AppEntry>, limit: Int): List<AppEntry> {
         val out = ArrayList<AppEntry>(limit)
         for (pkg in AppHistory.all()) {
-            val e = entries.firstOrNull { it.component?.packageName == pkg } ?: continue
+            val e = entries.firstOrNull { it.shortcut == null && it.component?.packageName == pkg } ?: continue
             out += e
             if (out.size == limit) break
         }
@@ -43,7 +43,9 @@ object AppSearch {
             if (best <= 0) continue
             val rank = e.component?.packageName?.let(AppHistory::rank) ?: -1
             val bonus = if (rank >= 0) 40f - rank * 2 else 0f
-            scored += e to best + bonus - k.name.length * 0.3f
+            // Ярлыки (чаты, действия) — после приложений с тем же качеством совпадения.
+            val penalty = if (e.shortcut != null) SHORTCUT_PENALTY else 0f
+            scored += e to best + bonus - penalty - k.name.length * 0.3f
         }
         scored.sortByDescending { it.second }
         return scored.map { it.first }
@@ -136,6 +138,7 @@ object AppSearch {
         return sb.toString()
     }
 
+    private const val SHORTCUT_PENALTY = 120f
     private const val CYR = "абвгдежзийклмнопрстуфхцчшщъыьэюя"
     private val LAT = arrayOf(
         "a", "b", "v", "g", "d", "e", "zh", "z", "i", "i", "k", "l", "m", "n", "o", "p",

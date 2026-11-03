@@ -2,10 +2,11 @@ package dev.anded.xmb
 
 import android.content.ComponentName
 import android.content.pm.LauncherActivityInfo
+import android.content.pm.ShortcutInfo
 import android.graphics.Bitmap
 import android.os.UserHandle
 
-/** Пункт колонки: приложение или служебный пункт раздела «Настройки» (special != null). */
+/** Пункт колонки: приложение, служебный пункт раздела «Настройки» (special != null) или ярлык для поиска. */
 class AppEntry(
     val key: String,
     val label: String,
@@ -14,6 +15,8 @@ class AppEntry(
     val info: LauncherActivityInfo?,
     val special: String? = null,
     val subtitle: String? = null,
+    /** Ярлык приложения (чат, действие); subtitle тогда — название приложения. */
+    val shortcut: ShortcutInfo? = null,
 ) {
     @Volatile var icon: Bitmap? = null
 
@@ -23,4 +26,5 @@ class AppEntry(
     var shown: String = label
     var shownSub: String? = subtitle
     var shownFor = -1f
+    var shownW = 0f
 }

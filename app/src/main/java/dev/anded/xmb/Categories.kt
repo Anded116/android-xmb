@@ -2,12 +2,22 @@ package dev.anded.xmb
 
 import android.content.pm.ApplicationInfo
 
-enum class Glyph { SETTINGS, CHAT, BANK, MAP, PLAY, BAG, FOOD, GRID, HOME, KEY, RESET, SEARCH }
+enum class Glyph { STAR, SETTINGS, CHAT, BANK, MAP, PLAY, BAG, FOOD, GRID, HOME, KEY, RESET, SEARCH, THEME, WAVE, ICONS, WALLPAPER,
+    LOOK, MEDIA_PLAY, MEDIA_PAUSE, MEDIA_NEXT, MEDIA_PREV, CALENDAR, BELL, HELP,
+}
 
 class Category(val id: String, val title: String, val glyph: Glyph)
 
 object Categories {
+    /** «Частые» — сами собираются из самых открываемых; переложить приложение туда нельзя. */
+    const val TOP = "top"
+    const val TOP_INDEX = 0
+    const val TOP_SIZE = 10
+    const val SETTINGS = 1
+    const val DEFAULT = 0
+
     val all = listOf(
+        Category(TOP, "Частые", Glyph.STAR),
         Category("settings", "Настройки", Glyph.SETTINGS),
         Category("chat", "Связь", Glyph.CHAT),
         Category("banks", "Банки", Glyph.BANK),
@@ -17,8 +27,6 @@ object Categories {
         Category("food", "Еда", Glyph.FOOD),
         Category("other", "Прочее", Glyph.GRID),
     )
-    const val SETTINGS = 0
-    const val DEFAULT = 1
 
     fun indexOf(id: String?): Int = all.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: all.lastIndex
 

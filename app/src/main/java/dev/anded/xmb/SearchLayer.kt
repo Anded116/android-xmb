@@ -12,7 +12,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.InputType
-import android.text.TextPaint
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.TypedValue
@@ -31,6 +30,7 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -98,7 +98,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
     private val placeholderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x33FFFFFF }
     private val cellPaint = textPaint(12.5f).apply { textAlign = Paint.Align.CENTER }
     private val rowPaint = textPaint(17f)
-    private val emptyPaint = textPaint(15f).apply { alpha = 150 }
+    private val emptyPaint = textPaint(15f).apply { fade(150) }
     private val rowCenter = -(rowPaint.fontMetrics.ascent + rowPaint.fontMetrics.descent) / 2f
     private val glassSize = (22 * dp).roundToInt()
     private val glass: Bitmap = GlyphArt.icon(context, Glyph.SEARCH, glassSize, 0)
@@ -155,11 +155,10 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         })
     }
 
-    private fun textPaint(sizeSp: Float) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+    private fun textPaint(sizeSp: Float) = ShadowTextPaint(dp).apply {
         textSize = sp(sizeSp)
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
         color = Color.WHITE
-        setShadowLayer(3 * dp, 0f, 1 * dp, 0x99000000.toInt())
     }
 
     private fun readInsets(insets: WindowInsets) {
@@ -205,10 +204,24 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         visibility = GONE
     }
 
+    /**
+     * Открыли поверх приложения — окно лаунчера ещё без фокуса, и showSoftInput молча отклоняется.
+     * Контроллер вставок дожидается фокуса сам; на всякий случай — ещё раз, когда фокус придёт.
+     */
     private fun showKeyboard() {
         if (!open) return
         field.requestFocus()
-        context.getSystemService(InputMethodManager::class.java)?.showSoftInput(field, 0)
+        val controller = field.windowInsetsController
+        if (controller != null) {
+            controller.show(WindowInsets.Type.ime())
+        } else {
+            context.getSystemService(InputMethodManager::class.java)?.showSoftInput(field, 0)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        if (hasWindowFocus && open && frozenTop < 0) showKeyboard()
     }
 
     private fun hideKeyboard() {
@@ -227,33 +240,78 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
 
     private fun update() {
         val q = field.text?.toString().orEmpty().trim()
+        val n = iconCount()
         if (q.isEmpty()) {
             // Пока история короткая, добираем приложениями текущего раздела XMB.
-            val recent = (AppSearch.recent(entries, ICONS + RECENT_ROWS) + fallback.filter { it.special == null })
-                .distinctBy { it.key }.take(ICONS + RECENT_ROWS)
-            icons = recent.take(ICONS)
-            rows = recent.drop(ICONS)
+            val recent = (AppSearch.recent(entries, n + RECENT_ROWS) + fallback.filter { it.special == null })
+                .distinctBy { it.key }.take(n + RECENT_ROWS)
+            icons = recent.take(n)
+            rows = recent.drop(n)
         } else {
             val hits = AppSearch.search(entries, q)
-            icons = hits.take(ICONS)
-            rows = hits.drop(ICONS).take(MAX_ROWS)
+            icons = hits.take(n)
+            rows = hits.drop(n).take(MAX_ROWS)
         }
-        val cellW = (width - margin * 2) / ICONS - 8 * dp
-        iconLabels = icons.map { TextUtils.ellipsize(it.label, cellPaint, cellW, TextUtils.TruncateAt.END).toString() }
-        val rowW = width - rowTextX() - margin
-        rowLabels = rows.map { TextUtils.ellipsize(it.label, rowPaint, rowW, TextUtils.TruncateAt.END).toString() }
+        val cw = cellW() - 8 * dp
+        iconLabels = icons.map { TextUtils.ellipsize(it.label, cellPaint, cw, TextUtils.TruncateAt.END).toString() }
+        val tw = rowW() - (12 * dp + rowIcon + 16 * dp) - 12 * dp
+        rowLabels = rows.map {
+            val text = if (it.shortcut != null) "${it.label} · ${it.subtitle}" else it.label
+            TextUtils.ellipsize(text, rowPaint, tw, TextUtils.TruncateAt.END).toString()
+        }
         invalidate()
     }
 
     // ---------- раскладка ----------
+    // Портрет: блок на всю ширину стоит на клавиатуре. Альбом: панель слева (справа — место плавающей
+    // клавиатуре), поле сверху, 5 иконок в ряд, строки результатов в две колонки.
 
-    private fun keyboardTop(): Float = height - max(imeInset, navInset).toFloat()
+    private fun landscape() = width > height
 
-    /** Верх поля без прокрутки: блок «поле + иконки + 3 строки» стоит на клавиатуре. */
+    private fun panelLeft() = margin
+
+    private fun panelRight() = if (landscape()) min(width * 0.55f, margin + 560 * dp) else width - margin
+
+    private fun iconCount() = if (landscape()) 5 else 4
+
+    private fun rowCols() = if (landscape()) 2 else 1
+
+    private fun cellW() = (panelRight() - panelLeft()) / iconCount()
+
+    /** Место иконки в ряду: в портрете справа налево — самое свежее справа, под большим пальцем. Обратима сама себе. */
+    private fun slot(i: Int) = if (landscape()) i else iconCount() - 1 - i
+
+    private fun rowW() = (panelRight() - panelLeft()) / rowCols()
+
+    private fun rowLeft(i: Int) = panelLeft() + (i % rowCols()) * rowW()
+
+    private fun rowCy(i: Int) = rowsTop() + (i / rowCols()) * rowH + rowH / 2
+
+    /**
+     * Верх клавиатуры. Блок держится на её самой высокой отметке, даже когда она спрятана: иначе без клавиатуры
+     * поиск съезжал вниз, а он и так у пальца. Отметка своя у портрета и альбома, переживает закрытие поиска.
+     */
+    private fun keyboardTop(): Float {
+        if (imeInset > 0) {
+            if (landscape()) imeLand = max(imeLand, imeInset) else imePort = max(imePort, imeInset)
+        }
+        val seen = if (landscape()) imeLand else imePort
+        return height - max(max(imeInset, seen), navInset).toFloat()
+    }
+
+    private var imePort = 0
+    private var imeLand = 0
+
+    /** Где кончается видимое сейчас: для попадания по строкам и предела прокрутки. */
+    private fun visibleBottom(): Float = height - max(imeInset, navInset).toFloat()
+
+    /** Верх поля без прокрутки: блок «поле + иконки + 3 строки» стоит на клавиатуре; в альбоме — без строк. */
     private fun baseTop(): Float {
         if (frozenTop >= 0) return frozenTop
+        if (landscape()) return topInset + 14 * dp
         val block = fieldH + gap + iconsH + VISIBLE_ROWS * rowH
-        return max(topInset + 16 * dp, keyboardTop() - 8 * dp - block)
+        // Блок заходит на клавиатуру на полвысоты поля: последняя строка уходит под неё, поле — ниже, к пальцу.
+        return max(topInset + 16 * dp, keyboardTop() - 8 * dp - block + fieldH / 2)
     }
 
     private fun fieldTop(): Float = baseTop() - scroll + (1f - ease(openT)) * 40 * dp
@@ -262,24 +320,24 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
 
     private fun rowsTop() = iconsTop() + iconsH
 
-    private fun rowTextX() = margin + 12 * dp + rowIcon + 16 * dp
+    private fun rowTextX(i: Int) = rowLeft(i) + 12 * dp + rowIcon + 16 * dp
 
     private fun maxScroll(): Float {
-        val bottom = baseTop() + fieldH + gap + iconsH + rows.size * rowH
-        return max(0f, bottom - (height - navInset - 8 * dp))
+        val lines = (rows.size + rowCols() - 1) / rowCols()
+        val bottom = baseTop() + fieldH + gap + iconsH + lines * rowH
+        return max(0f, bottom - (visibleBottom() - 8 * dp))
     }
 
     private fun cellRect(i: Int): Rect {
-        val cellW = (width - margin * 2) / ICONS
-        val cx = margin + cellW * (i + 0.5f)
+        val cx = panelLeft() + cellW() * (slot(i) + 0.5f)
         val cy = iconsTop() + cellIcon / 2 + 4 * dp
         launchRect.set((cx - cellIcon / 2).toInt(), (cy - cellIcon / 2).toInt(), (cx + cellIcon / 2).toInt(), (cy + cellIcon / 2).toInt())
         return launchRect
     }
 
     private fun rowRect(i: Int): Rect {
-        val cx = margin + 12 * dp + rowIcon / 2
-        val cy = rowsTop() + i * rowH + rowH / 2
+        val cx = rowLeft(i) + 12 * dp + rowIcon / 2
+        val cy = rowCy(i)
         launchRect.set((cx - rowIcon / 2).toInt(), (cy - rowIcon / 2).toInt(), (cx + rowIcon / 2).toInt(), (cy + rowIcon / 2).toInt())
         return launchRect
     }
@@ -290,6 +348,13 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        // Поле — в пределах панели; менять размеры посреди раскладки нельзя, поэтому на следующем шаге.
+        post {
+            val lp = field.layoutParams as LayoutParams
+            lp.leftMargin = (panelLeft() + 16 * dp + glassSize + 10 * dp).roundToInt()
+            lp.rightMargin = (width - panelRight() + 14 * dp).roundToInt()
+            field.layoutParams = lp
+        }
         placeField()
         if (open) update()
     }
@@ -318,24 +383,24 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         }
         placeField()
 
-        dimPaint.alpha = (200 * openT).toInt()
+        dimPaint.alpha = (225 * openT).toInt()
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dimPaint)
 
         val a = openT
         val ft = fieldTop()
         pillPaint.alpha = (0x2E * a).toInt()
-        dst.set(margin, ft, width - margin, ft + fieldH)
+        dst.set(panelLeft(), ft, panelRight(), ft + fieldH)
         canvas.drawRoundRect(dst, fieldH / 2, fieldH / 2, pillPaint)
         iconPaint.alpha = (220 * a).toInt()
-        canvas.drawBitmap(glass, margin + 16 * dp, ft + (fieldH - glassSize) / 2, iconPaint)
+        canvas.drawBitmap(glass, panelLeft() + 16 * dp, ft + (fieldH - glassSize) / 2, iconPaint)
 
         if (icons.isEmpty() && rows.isEmpty() && field.text.isNotEmpty()) {
-            emptyPaint.alpha = (150 * a).toInt()
-            canvas.drawText("Ничего не найдено", margin + 8 * dp, iconsTop() + 28 * dp, emptyPaint)
+            emptyPaint.fade((150 * a).toInt())
+            canvas.drawText("Ничего не найдено", panelLeft() + 8 * dp, iconsTop() + 28 * dp, emptyPaint)
         }
-        val cellW = (width - margin * 2) / ICONS
+        val cellW = cellW()
         for (i in icons.indices) {
-            val cx = margin + cellW * (i + 0.5f)
+            val cx = panelLeft() + cellW * (slot(i) + 0.5f)
             val top = iconsTop() + 4 * dp
             if (i == pressIcon) {
                 pressPaint.alpha = (34 * a).toInt()
@@ -344,24 +409,25 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
             }
             dst.set(cx - cellIcon / 2, top, cx + cellIcon / 2, top + cellIcon)
             drawIcon(canvas, icons[i].icon, a)
-            cellPaint.alpha = (235 * a).toInt()
+            cellPaint.fade((235 * a).toInt())
             canvas.drawText(iconLabels.getOrElse(i) { "" }, cx, top + cellIcon + 22 * dp, cellPaint)
         }
         val bottom = height.toFloat()
         for (i in rows.indices) {
-            val cy = rowsTop() + i * rowH + rowH / 2
+            val cy = rowCy(i)
             if (cy - rowH > bottom) break
             if (cy + rowH < 0) continue
+            val left = rowLeft(i)
             if (i == pressRow) {
                 pressPaint.alpha = (34 * a).toInt()
-                dst.set(margin, cy - rowH / 2 + 3 * dp, width - margin, cy + rowH / 2 - 3 * dp)
+                dst.set(left, cy - rowH / 2 + 3 * dp, left + rowW() - 6 * dp, cy + rowH / 2 - 3 * dp)
                 canvas.drawRoundRect(dst, 16 * dp, 16 * dp, pressPaint)
             }
-            val cx = margin + 12 * dp + rowIcon / 2
+            val cx = left + 12 * dp + rowIcon / 2
             dst.set(cx - rowIcon / 2, cy - rowIcon / 2, cx + rowIcon / 2, cy + rowIcon / 2)
             drawIcon(canvas, rows[i].icon, a)
-            rowPaint.alpha = (255 * a).toInt()
-            canvas.drawText(rowLabels.getOrElse(i) { "" }, rowTextX(), cy + rowCenter, rowPaint)
+            rowPaint.fade((255 * a).toInt())
+            canvas.drawText(rowLabels.getOrElse(i) { "" }, rowTextX(i), cy + rowCenter, rowPaint)
         }
         if (moving) postInvalidateOnAnimation()
     }
@@ -383,7 +449,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
     /** Касание поля отдаём EditText, пока это не протяжка; всё остальное — себе. */
     override fun onInterceptTouchEvent(e: MotionEvent): Boolean {
         if (!open) return false
-        val inField = e.y >= fieldTop() && e.y <= fieldTop() + fieldH
+        val inField = e.y >= fieldTop() && e.y <= fieldTop() + fieldH && e.x <= panelRight()
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 beginTouch(e)
@@ -445,7 +511,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         dragging = false
         scroller.forceFinished(true)
         pressIcon = hitIcon(e.x, e.y)
-        pressRow = if (pressIcon < 0) hitRow(e.y) else -1
+        pressRow = if (pressIcon < 0) hitRow(e.x, e.y) else -1
         invalidate()
     }
 
@@ -476,15 +542,17 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
             launch(icons[i], cellRect(i))
             return
         }
-        val r = hitRow(y)
+        val r = hitRow(x, y)
         if (r >= 0) {
             launch(rows[r], rowRect(r))
             return
         }
-        if (y < fieldTop() - 8 * dp) hide()
+        // Тап мимо: выше поля или правее панели (в альбоме там пусто или плавающая клавиатура).
+        if (y < fieldTop() - 8 * dp || x > panelRight() + 8 * dp) hide()
     }
 
     private fun launch(entry: AppEntry, rect: Rect) {
+        performHapticFeedback(Haptics.LAUNCH)
         hideKeyboard()
         onLaunch(entry, Rect(rect))
     }
@@ -492,19 +560,19 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
     private fun hitIcon(x: Float, y: Float): Int {
         val top = iconsTop()
         if (y < top || y > top + iconsH) return -1
-        val i = ((x - margin) / ((width - margin * 2) / ICONS)).toInt()
-        return if (x >= margin && i in icons.indices) i else -1
+        val i = slot(((x - panelLeft()) / cellW()).toInt())
+        return if (x >= panelLeft() && x <= panelRight() && i in icons.indices) i else -1
     }
 
-    private fun hitRow(y: Float): Int {
+    private fun hitRow(x: Float, y: Float): Int {
         val top = rowsTop()
-        if (y < top || y >= keyboardTop()) return -1
-        val i = ((y - top) / rowH).toInt()
+        if (y < top || y >= visibleBottom() || x < panelLeft() || x > panelRight()) return -1
+        val col = ((x - panelLeft()) / rowW()).toInt().coerceIn(0, rowCols() - 1)
+        val i = ((y - top) / rowH).toInt() * rowCols() + col
         return if (i in rows.indices) i else -1
     }
 
     private companion object {
-        const val ICONS = 4
         const val VISIBLE_ROWS = 3
         const val RECENT_ROWS = 8
         const val MAX_ROWS = 30
