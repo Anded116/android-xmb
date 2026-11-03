@@ -19,6 +19,7 @@ import android.os.BatteryManager
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.HapticFeedbackConstants
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
@@ -169,6 +170,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private val longPress = Runnable { openMenuForPress() }
 
     private var menuItems: List<MenuItem> = emptyList()
+
+    // Пункт меню под рамкой клавиш; -1 — рамки нет (меню открыто пальцем). keyMode — последний ввод был с клавиш.
+    private var menuSel = -1
+    private var keyMode = false
     private var menuTitle = ""
     private var menuOpen = false
     private var menuT = 0f
@@ -444,6 +449,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     fun closeMenu(): Boolean {
         if (!menuOpen) return false
         menuOpen = false
+        menuSel = -1
         invalidate()
         return true
     }
@@ -457,7 +463,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         itemH = (if (landscape) 54 else 74) * dp
         iconDraw = if (landscape) 38 * dp else iconPx.toFloat()
         focusX = w * if (landscape) 0.30f else 0.24f
-        catSpacing = w * if (landscape) 0.11f else 0.22f
+        // Шаг разделов — доля ширины, но в пределах dp: на узком альбоме (4:3) значки не слипаются, на планшете не разъезжаются.
+        catSpacing = if (landscape) (w * 0.11f).coerceIn(84 * dp, 150 * dp) else (w * 0.22f).coerceIn(76 * dp, 130 * dp)
         // Альбом: своя строка состояния в STATUS_GAP от верха, ряд разделов — в том же зазоре под ней
         // (до видимой верхушки выбранного значка).
         val cap = Rect().also { lineClockPaint.getTextBounds("0", 0, 1, it) }.height()
@@ -961,7 +968,9 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val now = Date()
             lineText = shortDateFormat.format(now) + batteryText + "   " + timeFormat.format(now)
         }
-        canvas.drawText(lineText, width - (dockW - dockSize()) / 2, clockBase, lineClockPaint)
+        // Правый край — по значкам дока, без дока — обычное поле.
+        val right = if (dockW > 0f) (dockW - dockSize()) / 2 else STATUS_GAP * 2 * dp
+        canvas.drawText(lineText, width - right, clockBase, lineClockPaint)
     }
 
     private fun drawIndexBubble(canvas: Canvas) {
@@ -1005,6 +1014,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     /** Открыть меню вариантов (тема, фон, значки) — то же боковое меню, что у долгого тапа. */
     fun showMenu(title: String, items: List<MenuItem>) {
+        menuSel = if (!keyMode) -1 else if (menuOpen && menuSel >= 0) menuSel.coerceAtMost(items.lastIndex) else 0
         menuItems = items
         layoutMenu()
         for (item in items) {
@@ -1033,6 +1043,11 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         for (i in menuItems.indices) {
             val item = menuItems[i]
             val cy = top + i * menuRowH + menuRowH / 2
+            if (i == menuSel) {
+                pressPaint.alpha = (38 * menuT).toInt()
+                dst.set(left + 10 * dp, cy - menuRowH / 2 + 3 * dp, width - 10 * dp, cy + menuRowH / 2 - 3 * dp)
+                canvas.drawRoundRect(dst, 12 * dp, 12 * dp, pressPaint)
+            }
             var x = tx
             val sw = item.swatch
             if (sw != null) {
@@ -1086,6 +1101,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         downX = e.x
         downY = e.y
         launched = false
+        keyMode = false
+        menuSel = -1
         if (menuOpen) {
             drag = Drag.MENU
             return
@@ -1283,12 +1300,80 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             }
             return
         }
-        val y = itemY(pressIndex - pos[pressCol]).toInt()
+        launchAt(entry, pressIndex - pos[pressCol])
+    }
+
+    /** Запуск пункта на расстоянии d от места выбранного; значок — точка, откуда разворачивается окно. */
+    private fun launchAt(entry: AppEntry, d: Float) {
+        val y = itemY(d).toInt()
         val half = (iconDraw / 2).toInt()
         launchRect.set(focusX.toInt() - half, y - half, focusX.toInt() + half, y + half)
         launched = true
         performHapticFeedback(Haptics.LAUNCH)
         onLaunch(entry, launchRect)
+    }
+
+    // ---------- клавиши: геймпад, крестовина, клавиатура ----------
+
+    /**
+     * ←→ — разделы, ↑↓ — пункты, A/Enter — запуск выбранного, X/Menu — его меню, Y — поиск, L1/R1 — на страницу,
+     * L2/R2 — в начало и конец, Start — «Настройки», Select — подсказки. B не перехватывается: необработанную
+     * B система сама превращает в «назад», а «назад» закрывает меню, поиск и подсказки. Стик система тоже
+     * сама переводит в крестовину. true — клавиша наша.
+     */
+    fun onKey(e: KeyEvent): Boolean {
+        val code = e.keyCode
+        if (code !in KEYS) return false
+        if (e.action != KeyEvent.ACTION_DOWN) return true
+        keyMode = true
+        lastTouch = System.nanoTime()
+        BgBus.touch()
+        invalidate()
+        if (hintsOpen) {
+            hintsOpen = false
+            return true
+        }
+        if (menuOpen) return menuKey(code)
+        val c = category
+        val last = max(0, columns.getOrNull(c)?.lastIndex ?: 0)
+        when (code) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> setCategory(c - 1)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> setCategory(c + 1)
+            KeyEvent.KEYCODE_DPAD_UP -> posTarget[c] = (posTarget[c] - 1).coerceIn(0, last)
+            KeyEvent.KEYCODE_DPAD_DOWN -> posTarget[c] = (posTarget[c] + 1).coerceIn(0, last)
+            KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_PAGE_UP -> posTarget[c] = (posTarget[c] - PAGE).coerceIn(0, last)
+            KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_PAGE_DOWN -> posTarget[c] = (posTarget[c] + PAGE).coerceIn(0, last)
+            KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_MOVE_HOME -> posTarget[c] = 0
+            KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_MOVE_END -> posTarget[c] = last
+            KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_MENU -> selected()?.let { entry ->
+                val items = onMenu(entry)
+                if (items.isNotEmpty()) showMenu(entry.label, items)
+            }
+            KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_SEARCH -> onSearch()
+            KeyEvent.KEYCODE_BUTTON_START -> sections.indexOfFirst { it.id == Categories.SETTINGS_ID }.takeIf { it >= 0 }?.let(::setCategory)
+            KeyEvent.KEYCODE_BUTTON_SELECT -> showHints()
+            else -> selected()?.let { launchAt(it, posTarget[c] - pos[c]) }
+        }
+        return true
+    }
+
+    private fun selected(): AppEntry? = columns.getOrNull(category)?.getOrNull(posTarget[category])
+
+    private fun menuKey(code: Int): Boolean {
+        val n = menuItems.size
+        when (code) {
+            KeyEvent.KEYCODE_DPAD_UP -> menuSel = if (menuSel <= 0) n - 1 else menuSel - 1
+            KeyEvent.KEYCODE_DPAD_DOWN -> menuSel = if (menuSel >= n - 1) 0 else menuSel + 1
+            KeyEvent.KEYCODE_DPAD_LEFT -> closeMenu()
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_A -> {
+                val item = menuItems.getOrNull(menuSel) ?: return true
+                performHapticFeedback(Haptics.TAP)
+                if (!item.keepOpen) closeMenu()
+                item.action()
+            }
+        }
+        if (n > 0 && menuSel < 0) menuSel = 0
+        return true
     }
 
     private fun openMenuForPress() {
@@ -1374,6 +1459,15 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         const val CARD_MEDIA = 3
         const val CARD_EVENT = 4
         const val DOUBLE_TAP_NS = 320_000_000L
+        const val PAGE = 5
+        val KEYS = setOf(
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_A,
+            KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_SEARCH,
+            KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_PAGE_DOWN,
+            KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END,
+            KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_SELECT,
+        )
 
         // Подсказки: заголовок и пояснение (строковые ресурсы); кнопка и док — только где они есть.
         val HINTS = listOf(

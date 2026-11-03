@@ -14,6 +14,9 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.content.Context
+import android.view.ContextThemeWrapper
+import android.view.KeyEvent
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -22,6 +25,7 @@ import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import java.util.Calendar
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
@@ -47,9 +51,10 @@ class MainActivity : Activity() {
         XmbSettings.init(this)
         AppHistory.init(this)
 
-        val iconPx = (AppRepository.ICON_DP * resources.displayMetrics.density).roundToInt()
-        xmb = XmbView(this, iconPx)
-        search = SearchLayer(this, iconPx)
+        val ui = uiContext()
+        val iconPx = (AppRepository.ICON_DP * ui.resources.displayMetrics.density).roundToInt()
+        xmb = XmbView(ui, iconPx)
+        search = SearchLayer(ui, iconPx)
         repo = AppRepository(this, iconPx) {
             xmb.setColumns(repo.columns, repo.sections, repo.dock)
             // «Частые» повторяют приложения из разделов — в поиске по одному разу; плюс ярлыки приложений.
@@ -194,6 +199,36 @@ class MainActivity : Activity() {
     // «назад» всегда наш — закрыть поиск, подсказки или меню, иначе ничего.
     private val back = OnBackInvokedCallback {
         if (search.open) closeSearch() else if (!xmb.closeHints()) xmb.closeMenu()
+    }
+
+    /**
+     * Планшеты и ТВ (короткая сторона больше 480 dp) и маленькие приставки (меньше 360 dp) получают тот же XMB
+     * в масштабе: вместо пересчёта каждого размера для его видов меняется плотность — dp и sp растут вместе.
+     * Телефоны (360–480 dp) — как есть.
+     */
+    private fun uiContext(): Context {
+        val sw = resources.configuration.smallestScreenWidthDp
+        val s = when {
+            sw < 360 -> sw / 360f
+            sw > 480 -> min(1.5f, sw / 480f)
+            else -> return this
+        }
+        val dpi = (resources.configuration.densityDpi * s).roundToInt()
+        return ContextThemeWrapper(this, R.style.Theme_Xmb).apply {
+            applyOverrideConfiguration(Configuration().apply { densityDpi = dpi })
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (search.open) {
+            if (event.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
+                if (event.action == KeyEvent.ACTION_DOWN) toggleSearch()
+                return true
+            }
+        } else if (xmb.onKey(event)) {
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     /** Ближайшее событие — запрос к провайдеру календаря в фоне, результат — в карточку «Сейчас». */
