@@ -233,6 +233,18 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private val shortDateFormat = SimpleDateFormat("EE, d MMM", Locale.getDefault())
     private var clockMinute = -1L
     private var clockBase = 0f
+
+    // Верхняя граница содержимого: низ своих часов или системной строки состояния.
+    private var headTop = 0f
+
+    /** Строка состояния скрыта — рисуются свои часы (дата, заряд, время) в углу. */
+    var ownClock = false
+        set(v) {
+            if (field == v) return
+            field = v
+            if (width > 0) onSizeChanged(width, height, width, height)
+            invalidate()
+        }
     private var lineText = ""
     private var batteryText = ""
     private val batteryReceiver = object : BroadcastReceiver() {
@@ -264,8 +276,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         applyLook()
         setOnApplyWindowInsetsListener { _, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars())
+            val moved = bars.top != topInset || bars.bottom != bottomInset
             topInset = bars.top
             bottomInset = bars.bottom
+            if (moved && width > 0) onSizeChanged(width, height, width, height)
             insets
         }
     }
@@ -285,9 +299,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         val sans = Typeface.create("sans-serif", Typeface.NORMAL)
         val sansMedium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         val dot = look == Look.NOTHING
-        val text = if (look == Look.XMB) sans else Fonts.inter
+        val classic = look == Look.XMB || look == Look.MIDNIGHT
+        val text = if (classic) sans else Fonts.inter
         val title = when (look) {
-            Look.XMB -> sansMedium
+            Look.XMB, Look.MIDNIGHT -> sansMedium
             Look.NOTHING -> Fonts.dotTitle
             Look.AURORA -> Fonts.interMedium
         }
@@ -296,9 +311,9 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             pt.typeface = title
             pt.letterSpacing = if (dot) 0.08f else 0f
         }
-        cardTitlePaint.typeface = if (look == Look.XMB) sansMedium else Fonts.interMedium
+        cardTitlePaint.typeface = if (classic) sansMedium else Fonts.interMedium
         lineClockPaint.typeface = when (look) {
-            Look.XMB -> Typeface.create("sans-serif-light", Typeface.NORMAL)
+            Look.XMB, Look.MIDNIGHT -> Typeface.create("sans-serif-light", Typeface.NORMAL)
             Look.NOTHING -> Fonts.dotSmall
             Look.AURORA -> Fonts.interLight
         }
@@ -309,7 +324,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         badgePaint.color = if (dot) NOTHING_RED else 0xFFE5484D.toInt()
         menuPaint.color = when (look) {
             Look.XMB -> 0xFF0A0E18.toInt()
-            Look.NOTHING -> Color.BLACK
+            Look.NOTHING, Look.MIDNIGHT -> Color.BLACK
             Look.AURORA -> 0xFF0E1226.toInt()
         }
         badgeCenter = -(badgeTextPaint.fontMetrics.ascent + badgeTextPaint.fontMetrics.descent) / 2f
@@ -475,7 +490,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         // (до видимой верхушки выбранного значка).
         val cap = Rect().also { lineClockPaint.getTextBounds("0", 0, 1, it) }.height()
         clockBase = STATUS_GAP * dp + cap
-        barY = if (landscape) clockBase + STATUS_GAP * dp + catBig * ROW_TOP else h * 0.30f
+        headTop = if (ownClock) clockBase else topInset.toFloat()
+        barY = if (landscape) headTop + STATUS_GAP * dp + catBig * ROW_TOP else h * 0.30f
         selY = barY + (if (landscape) 82 else 104) * dp
         aboveY = barY - (if (landscape) 64 else 80) * dp
         dockH = if (landscape || dock.isEmpty()) 0f else 96 * dp
@@ -727,7 +743,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     }
 
     /** Альбом: пять ячеек дока от строки состояния до низа, поля сверху и снизу равны. */
-    private fun dockCell(): Float = (height - bottomInset - 2 * (clockBase + STATUS_GAP * dp)) / DOCK_SIZE
+    private fun dockCell(): Float = (height - bottomInset - 2 * (headTop + STATUS_GAP * dp)) / DOCK_SIZE
 
     private fun dockSize(): Float = if (width > height) min(dockIcon, dockCell() - 16 * dp) else dockIcon
 
@@ -782,7 +798,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 }
                 glass(canvas, dst, 28 * dp, 1f)
             }
-            Look.XMB -> Unit
+            Look.XMB, Look.MIDNIGHT -> Unit
         }
         val half = dockSize() / 2
         for (i in dock.indices) {
@@ -847,7 +863,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         var y = topInset + 18 * dp
         cardRect.set(left, y, right, bottom)
         when (look) {
-            Look.XMB -> {
+            Look.XMB, Look.MIDNIGHT -> {
                 cardPaint.color = Color.WHITE
                 cardPaint.alpha = (28 * a).toInt()
                 canvas.drawRoundRect(cardRect, 18 * dp, 18 * dp, cardPaint)
@@ -965,9 +981,9 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         canvas.drawText(context.getString(R.string.hints_close), x, y + 12 * dp, subPaint)
     }
 
-    /** Только в альбоме, где строка состояния скрыта: дата, заряд и время одной строкой в углу. */
+    /** Где строка состояния скрыта (настройка; по умолчанию — в альбоме): дата, заряд и время одной строкой в углу. */
     private fun drawClock(canvas: Canvas) {
-        if (width <= height) return
+        if (!ownClock) return
         val minute = System.currentTimeMillis() / 60_000
         if (minute != clockMinute) {
             clockMinute = minute

@@ -26,6 +26,7 @@
     <string name="look_classic">Классика</string>
     <string name="look_dots">Точечная</string>
     <string name="look_aurora">Аврора</string>
+    <string name="look_midnight">Полночь</string>
     <string name="theme_by_month">По месяцу</string>
     <string-array name="theme_names">
         <item>Серебро (январь)</item>
@@ -61,6 +62,12 @@
     <string name="freeze_on">Замирает через 30 с покоя</string>
     <string name="freeze_always">Всегда</string>
     <string name="freeze_menu_on">Замирать через 30 с покоя</string>
+    <string name="set_status">Строка состояния</string>
+    <string-array name="status_names">
+        <item>Скрыта в альбоме</item>
+        <item>Всегда видна</item>
+        <item>Всегда скрыта, свои часы</item>
+    </string-array>
     <string name="set_dock">Док</string>
     <string name="dock_on">Пять своих приложений внизу</string>
     <string name="dock_off">Выключен</string>

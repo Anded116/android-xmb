@@ -295,6 +295,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             special("theme", R.string.set_theme, Glyph.THEME, XmbSettings.themeName(context)),
             special("style", R.string.set_style, Glyph.WAVE, res.getStringArray(R.array.style_names)[XmbSettings.style]),
             special("freeze", R.string.set_freeze, Glyph.WAVE, str(if (XmbSettings.freezeBg) R.string.freeze_on else R.string.freeze_always)),
+            special("status", R.string.set_status, Glyph.STATUS, res.getStringArray(R.array.status_names)[XmbSettings.statusBar]),
             special("dock", R.string.set_dock, Glyph.GRID, str(if (XmbSettings.dock) R.string.dock_on else R.string.dock_off)),
             special("order", R.string.set_order, Glyph.GRID, str(if (XmbSettings.sortByUsage) R.string.order_usage else R.string.order_abc)),
             special("icons", R.string.set_icons, Glyph.ICONS, iconName),

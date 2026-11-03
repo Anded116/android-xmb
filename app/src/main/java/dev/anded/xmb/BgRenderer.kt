@@ -3,6 +3,8 @@ package dev.anded.xmb
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BlendMode
+import android.graphics.BlendModeColorFilter
+import android.graphics.Color
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RadialGradient
@@ -131,8 +133,11 @@ class BgRenderer(private val context: Context) {
         when (lk) {
             Look.NOTHING -> return drawNothing(canvas, animT, BgBus.flow(now), st)
             Look.AURORA -> return drawAurora(canvas, animT, st)
+            Look.MIDNIGHT -> return drawMidnight(canvas, animT, BgBus.flow(now), st)
             Look.XMB -> Unit
         }
+        wavePaint.colorFilter = null
+        sparkPaint.colorFilter = null
         updateTheme()
         canvas.drawRenderNode(bgNode)
 
@@ -231,6 +236,35 @@ class BgRenderer(private val context: Context) {
         return waveY + amp * (pitch * 2.6f * sin(6.2832f * u + t * 0.7f) + pitch * 1.2f * sin(6.2832f * u * 2.3f - t * 1.1f + 1.3f))
     }
 
+    /**
+     * Полночь: чёрный фон (пиксели OLED выключены), волна PS3 и искры цветом темы. «Спокойный» — волна без ленты
+     * и искр, «Только градиент» — просто чёрный.
+     */
+    private fun drawMidnight(canvas: Canvas, t: Float, flow: Float, st: Int) {
+        canvas.drawColor(0xFF000000.toInt())
+        if (st == XmbSettings.STYLE_PLAIN) return
+        val chosen = XmbSettings.theme
+        val key = chosen + 1 + MIDNIGHT_KEY + System.currentTimeMillis() / 60_000 * 100
+        if (key != themeKey) {
+            themeKey = key
+            val theme = if (chosen == XmbSettings.THEME_BY_MONTH) Calendar.getInstance().get(Calendar.MONTH) else chosen
+            val hsv = FloatArray(3)
+            Color.colorToHSV(WaveShader.themeBottom(theme), hsv)
+            hsv[1] = maxOf(hsv[1], 0.45f)
+            hsv[2] = 1f
+            val tint = BlendModeColorFilter(Color.HSVToColor(hsv), BlendMode.MODULATE)
+            wavePaint.colorFilter = tint
+            sparkPaint.colorFilter = tint
+        }
+        if (st != style) {
+            style = st
+            WaveShader.setGeometry(wave, w.toFloat(), unit, waveY, if (st == XmbSettings.STYLE_PS3) 0.07f else 0f)
+        }
+        WaveShader.setTime(wave, unit, (t + flow) % 3600f)
+        canvas.drawRect(0f, waveY - waveHalf, w.toFloat(), waveY + waveHalf, wavePaint)
+        if (st == XmbSettings.STYLE_PS3) drawSparks(canvas, t, flow)
+    }
+
     /** Аврора: приглушённый градиент темы и цветные сполохи в слое 1/4 разрешения. */
     private fun drawAurora(canvas: Canvas, t: Float, st: Int) {
         val chosen = XmbSettings.theme
@@ -292,6 +326,7 @@ class BgRenderer(private val context: Context) {
         const val SPARKS = 28
         const val NOTHING_KEY = -2L
         const val AURORA_KEY = 1L shl 50
+        const val MIDNIGHT_KEY = 1L shl 51
     }
 }
 

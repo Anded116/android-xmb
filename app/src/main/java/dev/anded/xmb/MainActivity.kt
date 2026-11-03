@@ -139,14 +139,21 @@ class MainActivity : Activity() {
      * В альбоме строка состояния скрыта — XMB и так еле помещается, там свои маленькие часы; шторка — свайпом от верха.
      * В портрете строка обычная: в ней уведомления.
      */
+    /** Строка состояния по настройке; где она скрыта — XMB рисует свои часы с датой и зарядом. */
     private fun applyStatusBar(orientation: Int = resources.configuration.orientation) {
         val bars = window.decorView.windowInsetsController ?: return
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        val hide = when (XmbSettings.statusBar) {
+            XmbSettings.STATUS_SHOW -> false
+            XmbSettings.STATUS_HIDE -> true
+            else -> orientation == Configuration.ORIENTATION_LANDSCAPE
+        }
+        if (hide) {
             bars.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             bars.hide(WindowInsets.Type.statusBars())
         } else {
             bars.show(WindowInsets.Type.statusBars())
         }
+        xmb.ownClock = hide
     }
 
     override fun onResume() {
@@ -252,7 +259,6 @@ class MainActivity : Activity() {
         }.start()
     }
 
-    @Deprecated("Activity API")
     private fun isHome(): Boolean = getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_HOME) == true
 
     /** Системный диалог «Сделать лаунчером по умолчанию»; если система его уже не покажет — страница выбора. */
@@ -272,6 +278,7 @@ class MainActivity : Activity() {
         if (requestCode == REQ_HOME) repo.reload()
     }
 
+    @Deprecated("Activity API")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         refreshCalendar()
@@ -291,6 +298,7 @@ class MainActivity : Activity() {
             "order" -> orderMenu()
             "freeze" -> freezeMenu()
             "dock" -> dockMenu()
+            "status" -> statusMenu()
             "notices" -> open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             "calendar" -> if (NextEvent.granted(this)) refreshCalendar() else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 1)
             "hints" -> xmb.showHints()
@@ -396,6 +404,18 @@ class MainActivity : Activity() {
             }
         }
         xmb.showMenu(getString(R.string.set_shape), items)
+    }
+
+    private fun statusMenu() {
+        val items = resources.getStringArray(R.array.status_names).mapIndexed { i, name ->
+            XmbView.MenuItem(name, checked = XmbSettings.statusBar == i, keepOpen = true) {
+                XmbSettings.statusBar = i
+                applyStatusBar()
+                statusMenu()
+                repo.reload()
+            }
+        }
+        xmb.showMenu(getString(R.string.set_status), items)
     }
 
     private fun dockMenu() {

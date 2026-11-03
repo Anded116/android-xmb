@@ -4,7 +4,7 @@ import android.content.pm.ApplicationInfo
 
 enum class Glyph { STAR, SETTINGS, CHAT, BANK, MAP, PLAY, BAG, FOOD, GRID, HOME, KEY, RESET, SEARCH, THEME, WAVE, ICONS, WALLPAPER,
     LOOK, MEDIA_PLAY, MEDIA_PAUSE, MEDIA_NEXT, MEDIA_PREV, CALENDAR, BELL, HELP,
-    GAMES, PHOTO, NEWS, WORK, BUSINESS, EDU, HEALTH, LIFE, TOOLS,
+    GAMES, PHOTO, NEWS, WORK, BUSINESS, EDU, HEALTH, LIFE, TOOLS, STATUS,
 }
 
 /** Раздел. title — строковый ресурс; always — показывается и пустым («Частые», «Настройки»), остальные пустые скрыты. */

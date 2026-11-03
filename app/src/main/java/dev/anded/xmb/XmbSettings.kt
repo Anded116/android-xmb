@@ -17,6 +17,9 @@ object XmbSettings {
     // Названия тем (по цвету, в скобках месяц, к которому тема привязана на плеере), фонов и форм значков —
     // строковые массивы theme_names, style_names, shape_names; номера — их индексы.
     const val THEMES = 12
+    const val STATUS_AUTO = 0
+    const val STATUS_SHOW = 1
+    const val STATUS_HIDE = 2
     const val SHAPE_SYSTEM = 0
     const val SHAPES = 4
 
@@ -68,6 +71,11 @@ object XmbSettings {
     var iconShape: Int
         get() = prefs.getInt("icon_shape", SHAPE_SYSTEM).coerceIn(0, SHAPES - 1)
         set(v) = prefs.edit().putInt("icon_shape", v).apply()
+
+    /** Строка состояния: STATUS_AUTO — скрыта в альбоме, STATUS_SHOW — всегда, STATUS_HIDE — никогда (свои часы). */
+    var statusBar: Int
+        get() = prefs.getInt("status_bar", STATUS_AUTO).coerceIn(STATUS_AUTO, STATUS_HIDE)
+        set(v) = prefs.edit().putInt("status_bar", v).apply()
 
     /** Док — пять своих приложений снизу (в альбоме — справа); по умолчанию — как в сборке. */
     var dock: Boolean

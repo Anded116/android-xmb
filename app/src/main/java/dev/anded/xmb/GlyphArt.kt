@@ -60,6 +60,7 @@ object GlyphArt {
         Glyph.HEALTH -> R.drawable.xmb_health
         Glyph.LIFE -> R.drawable.xmb_life
         Glyph.TOOLS -> R.drawable.xmb_tools
+        Glyph.STATUS -> R.drawable.xmb_status
     }
 
     /** Значок size×size с полем pad вокруг под тень; центр значка — центр Bitmap. */

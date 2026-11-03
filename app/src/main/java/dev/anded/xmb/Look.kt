@@ -12,13 +12,16 @@ enum class Look(val title: Int) {
     XMB(R.string.look_classic),
     NOTHING(R.string.look_dots),
     AURORA(R.string.look_aurora),
+
+    /** Для OLED: чистый чёрный фон, волна и искры цветом темы, без пятен света; сама «Классика» в остальном. */
+    MIDNIGHT(R.string.look_midnight),
     ;
 
     /** Белые силуэты без градиента и тени — плоские, как значки Nothing OS. */
     val flatIcons: Boolean get() = this == NOTHING
 
     /** Тень под текстом: на чёрном фоне она не нужна и только мылит буквы. */
-    val textShadow: Boolean get() = this != NOTHING
+    val textShadow: Boolean get() = this != NOTHING && this != MIDNIGHT
 }
 
 /** Красный Nothing: точка на фоне и счётчики уведомлений. */

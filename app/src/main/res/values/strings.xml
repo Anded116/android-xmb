@@ -28,6 +28,7 @@
     <string name="look_classic">Classic</string>
     <string name="look_dots">Dot matrix</string>
     <string name="look_aurora">Aurora</string>
+    <string name="look_midnight">Midnight</string>
     <string name="theme_by_month">By month</string>
     <string-array name="theme_names">
         <item>Silver (January)</item>
@@ -63,6 +64,12 @@
     <string name="freeze_on">Freezes after 30 s idle</string>
     <string name="freeze_always">Always</string>
     <string name="freeze_menu_on">Freeze after 30 s idle</string>
+    <string name="set_status">Status bar</string>
+    <string-array name="status_names">
+        <item>Hidden in landscape</item>
+        <item>Always shown</item>
+        <item>Always hidden, own clock</item>
+    </string-array>
     <string name="set_dock">Dock</string>
     <string name="dock_on">Your five apps at the bottom</string>
     <string name="dock_off">Off</string>
