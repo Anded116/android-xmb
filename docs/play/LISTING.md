@@ -30,7 +30,7 @@ the section, tap any app to open it — no grids, no pages, no clutter.
 • App shortcuts (recent chats, actions) right in the long-press menu and in search
 
 **Looks**
-• Three looks: Classic wave, Dot matrix and Aurora; twelve colour themes
+• Four looks: Classic wave, Dot matrix, Aurora and OLED-black Midnight; twelve colour themes
 • White silhouette icons, free-form colour icons or any ADW/Nova icon pack; custom icon shapes
 • Live wallpaper so the background stays in place in recents
 • Notification badges and a «Now» card with music controls and your next event (optional)
@@ -60,7 +60,7 @@ No internet permission, no ads, no analytics. Everything stays on your device.
 • Ярлыки приложений (свежие чаты, действия) — в меню долгого тапа и в поиске
 
 **Оформление**
-• Три оформления: «Классика», «Точечная», «Аврора»; двенадцать цветовых тем
+• Четыре оформления: «Классика», «Точечная», «Аврора» и чёрная для OLED «Полночь»; двенадцать цветовых тем
 • Белые силуэты, цветные значки своей формы или любой пакет значков ADW/Nova; своя форма значков
 • Живые обои — фон остаётся на месте в многозадачности
 • Значки уведомлений и карточка «Сейчас» с плеером и ближайшим событием (по желанию)
