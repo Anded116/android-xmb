@@ -11,3 +11,6 @@ local.ps1
 keystore.properties
 *.jks
 *.keystore
+
+# Доска тикетов в браузере генерируется командой board
+tickets/board.html

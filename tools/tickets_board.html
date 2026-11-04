@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тикеты XMB-лаунчера</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #6b7280; --line: #e5e7eb; --card: #f9fafb;
+  --accent: #2563eb; --p0: #dc2626; --p1: #ea580c; --p2: #2563eb; --p3: #6b7280;
+  --ok: #16a34a; --warn: #d97706;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115; --fg: #e6e6e6; --muted: #9aa0aa; --line: #262b33; --card: #171a20;
+    --accent: #60a5fa; --p0: #f87171; --p1: #fb923c; --p2: #60a5fa; --p3: #9aa0aa;
+    --ok: #4ade80; --warn: #fbbf24;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+header { padding: 16px 20px 0; border-bottom: 1px solid var(--line); }
+h1 { font-size: 18px; margin: 0 0 2px; }
+.sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 8px 14px; border: 1px solid var(--line); border-bottom: none; cursor: pointer;
+  background: var(--card); color: var(--muted); border-radius: 6px 6px 0 0; font-size: 13px;
+}
+.tab.on { background: var(--bg); color: var(--fg); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent); }
+.tab .n { color: var(--muted); font-weight: 400; }
+main { padding: 16px 20px 60px; max-width: 1200px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+input[type=text], textarea, select {
+  background: var(--card); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 9px; font: inherit;
+}
+input[type=text]:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#q { min-width: 260px; flex: 1; }
+.chip {
+  border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px;
+}
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button {
+  background: var(--card); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.row {
+  display: grid; grid-template-columns: 92px 28px 110px 88px 1fr; gap: 10px; align-items: baseline;
+  padding: 7px 8px; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.row:hover { background: var(--card); }
+.row .id { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--accent); }
+.p { font-weight: 700; }
+.P0 { color: var(--p0); } .P1 { color: var(--p1); } .P2 { color: var(--p2); } .P3 { color: var(--p3); }
+.st { font-size: 12px; color: var(--muted); }
+.st.fixed { color: var(--warn); } .st.open { color: var(--fg); }
+.st.verified, .st.closed, .st.accepted { color: var(--ok); }
+.area { font-size: 12px; color: var(--muted); }
+.body { padding: 4px 8px 18px 100px; border-bottom: 1px solid var(--line); background: var(--card); }
+.body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
+.body code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+.body ul, .body ol { margin: 4px 0; padding-left: 22px; }
+.meta { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.hint { color: var(--muted); font-size: 13px; margin: 6px 0 16px; }
+.group { margin: 22px 0 8px; font-size: 13px; font-weight: 600; }
+.pt { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: var(--card); }
+.pt-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.pt-actions { display: flex; gap: 6px; margin: 8px 0 0; flex-wrap: wrap; align-items: center; }
+.pt.ok { border-color: var(--ok); }
+.pt.fail { border-color: var(--p0); }
+button.v.on-ok { background: var(--ok); border-color: var(--ok); color: #08130b; font-weight: 600; }
+button.v.on-fail { background: var(--p0); border-color: var(--p0); color: #fff; font-weight: 600; }
+.note { flex: 1; min-width: 220px; }
+.fb { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--card); margin-bottom: 14px; }
+.fb .grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.fb textarea { width: 100%; min-height: 70px; }
+.fbitem { border-bottom: 1px solid var(--line); padding: 8px 0; display: flex; gap: 10px; align-items: baseline; }
+.fbitem .x { color: var(--p0); cursor: pointer; }
+textarea.out { width: 100%; min-height: 320px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.empty { color: var(--muted); padding: 20px 0; }
+.count { color: var(--muted); font-size: 12px; margin: 10px 0; }
+.badge { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Тикеты XMB-лаунчера</h1>
+  <div class="sub">Сгенерировано __GENERATED__ из <code>tickets/</code> · страница только читает файлы; изменения выдаются командами во вкладке «Выгрузка»</div>
+  <div class="tabs">
+    <div class="tab on" data-v="board">Доска <span class="n" id="n-board"></span></div>
+    <div class="tab" data-v="review">Ревью <span class="n" id="n-pt"></span></div>
+    <div class="tab" data-v="feedback">Новый фидбек <span class="n" id="n-fb"></span></div>
+    <div class="tab" data-v="export">Выгрузка для агента</div>
+  </div>
+</header>
+<main>
+  <section id="v-board">
+    <div class="bar">
+      <input type="text" id="q" placeholder="поиск по заголовку, тексту, id...">
+      <span id="f-prio"></span><span id="f-status"></span>
+    </div>
+    <div class="bar"><span id="f-area"></span></div>
+    <div class="count" id="cnt"></div>
+    <div id="list"></div>
+  </section>
+
+  <section id="v-review" hidden>
+    <div class="hint">Тикеты в статусе <b>fixed</b>: агент считает, что починил, но вы это не проверяли. Вопрос по каждому — <b>работает ли теперь правильно</b>. «Ушёл» = проблемы больше нет, тикет закрывается (<code>verified</code>). «Остался» = баг всё ещё воспроизводится, тикет возвращается в работу (<code>open</code>). Заметка попадёт в историю тикета — для «остался» она особенно важна.</div>
+    <div class="bar"><button id="pt-reset">Сбросить отметки</button></div>
+    <div id="ptlist"></div>
+  </section>
+
+  <section id="v-feedback" hidden>
+    <div class="hint">Здесь копится НОВЫЙ фидбек с ревью — то, на что тикетов ещё нет. Агент заведёт по тикету на пункт.</div>
+    <div class="fb">
+      <div class="grid">
+        <input type="text" id="fb-title" placeholder="Коротко: что не так" style="flex:1;min-width:300px">
+        <select id="fb-type"><option value="bug">баг</option><option value="feature">фича</option><option value="tech">тех. долг</option><option value="question">вопрос</option></select>
+        <select id="fb-prio"><option>P0</option><option>P1</option><option selected>P2</option><option>P3</option></select>
+        <select id="fb-area"></select>
+      </div>
+      <textarea id="fb-desc" placeholder="Подробности: что делали, что увидели, что ожидали. Чем конкретнее, тем меньше вопросов от агента."></textarea>
+      <div class="bar" style="margin-top:8px"><button class="primary" id="fb-add">Добавить пункт</button></div>
+    </div>
+    <div id="fblist"></div>
+  </section>
+
+  <section id="v-export" hidden>
+    <div class="hint">Первый блок — вставьте агенту в чат. Второй — команды, которые агент выполнит сам (или выполните вручную в терминале из корня проекта, на любой ОС).</div>
+    <div class="bar">
+      <button class="primary" id="save1">Сохранить фидбек в файл</button>
+      <button id="copy1">Скопировать отчёт для агента</button>
+      <button id="copy2">Скопировать команды</button>
+      <button id="clear">Очистить сессию</button>
+    </div>
+    <h3>Отчёт</h3>
+    <textarea class="out" id="out1" readonly></textarea>
+    <h3>Команды CLI</h3>
+    <textarea class="out" id="out2" readonly style="min-height:160px"></textarea>
+  </section>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const AREAS = ['math','world','nav','sim','net','mesh','app','design','proto','docs','infra'];
+const KEY = 'xmb-launcher-tickets-session';
+const S = Object.assign({ verdicts: {}, notes: {}, feedback: [] }, JSON.parse(localStorage.getItem(KEY) || '{}'));
+const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const byId = id => DATA.find(t => t.id === id);
+const today = () => new Date().toISOString().slice(0,10);
+
+/* markdown-lite: headings, lists, code, bold, ticket links */
+function md(src) {
+  const inline = s => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/\[(LNC-[A-Z]?\d{4})\]\([^)]*\)/g, '<a href="#" data-goto="$1">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  let out = '', list = null;
+  const close = () => { if (list) { out += '</' + list + '>'; list = null; } };
+  for (const raw of src.split('\n')) {
+    const line = raw.trimEnd();
+    let m;
+    if (!line.trim()) { close(); continue; }
+    if ((m = line.match(/^##\s+(.*)$/))) { close(); out += '<h3>' + inline(m[1]) + '</h3>'; }
+    else if ((m = line.match(/^[-*]\s+(.*)$/))) {
+      if (list !== 'ul') { close(); out += '<ul>'; list = 'ul'; }
+      out += '<li>' + inline(m[1]) + '</li>';
+    }
+    else if ((m = line.match(/^(\d+)\.\s+(.*)$/))) {
+      if (list !== 'ol') { close(); out += '<ol>'; list = 'ol'; }
+      out += '<li>' + inline(m[2]) + '</li>';
+    }
+    else { close(); out += '<p>' + inline(line) + '</p>'; }
+  }
+  close();
+  return out;
+}
+
+/* ---------------------------------------------------------------- board tab */
+const F = { q: '', prio: new Set(), status: new Set(), area: new Set() };
+const STATUSES = ['open','in-progress','fixed','verified','cannot-reproduce','closed','wontfix','accepted','superseded'];
+
+function chips(host, values, set, render) {
+  host.innerHTML = '';
+  values.forEach(v => {
+    const b = document.createElement('span');
+    b.className = 'chip' + (set.has(v) ? ' on' : '');
+    b.textContent = v;
+    b.onclick = () => { set.has(v) ? set.delete(v) : set.add(v); chips(host, values, set, render); render(); };
+    host.appendChild(b);
+  });
+}
+
+function matches(t) {
+  if (F.prio.size && !F.prio.has(t.priority)) return false;
+  if (F.status.size && !F.status.has(t.status)) return false;
+  if (F.area.size && !F.area.has(t.area)) return false;
+  if (F.q) {
+    const hay = (t.id + ' ' + t.title + ' ' + t.body + ' ' + t.labels).toLowerCase();
+    if (!F.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+
+const PORD = { P0: 0, P1: 1, P2: 2, P3: 3 };
+const SORD = { open: 0, 'in-progress': 0, fixed: 1, accepted: 2 };
+
+function renderBoard() {
+  const list = document.getElementById('list');
+  const rows = DATA.filter(matches).sort((a, b) =>
+    (SORD[a.status] ?? 3) - (SORD[b.status] ?? 3) || PORD[a.priority] - PORD[b.priority] || a.id.localeCompare(b.id));
+  document.getElementById('cnt').textContent = rows.length + ' из ' + DATA.length;
+  list.innerHTML = '';
+  if (!rows.length) { list.innerHTML = '<div class="empty">Ничего не найдено.</div>'; return; }
+  rows.forEach(t => {
+    const r = document.createElement('div');
+    r.className = 'row'; r.id = 'row-' + t.id;
+    r.innerHTML = '<span class="id">' + t.id + '</span>'
+      + '<span class="p ' + t.priority + '">' + t.priority + '</span>'
+      + '<span class="st ' + t.status + '">' + t.status + '</span>'
+      + '<span class="area">' + t.area + '</span>'
+      + '<span>' + esc(t.title) + (t.labels.includes('watch') ? ' 👀' : '') + '</span>';
+    const d = document.createElement('div');
+    d.className = 'body'; d.hidden = true;
+    r.onclick = () => {
+      if (!d.dataset.done) {
+        d.innerHTML = md(t.body) + '<div class="meta">тип: ' + t.type + ' · источник: ' + t.source
+          + ' · проверка: ' + (t.verify || '—') + ' · создан: ' + t.created + ' · обновлён: ' + t.updated
+          + (t.links ? ' · связи: ' + t.links : '') + (t.commits ? ' · коммиты: ' + t.commits : '')
+          + '<br>файл: <code>tickets/' + t.file + '</code></div>';
+        d.dataset.done = '1';
+      }
+      d.hidden = !d.hidden;
+    };
+    list.appendChild(r); list.appendChild(d);
+  });
+}
+
+/* ------------------------------------------------------------- review tab */
+const VERIFY_GROUPS = [
+  ['review', 'Проверить ГЛАЗАМИ В ДЕМО'],
+  ['build', 'Проверить БИЛДОМ'],
+  ['test', 'Проверить ТЕСТОМ'],
+  ['bench', 'Проверить ЗАМЕРОМ (bench)'],
+  ['', 'Прочее']
+];
+
+function renderReview() {
+  const host = document.getElementById('ptlist');
+  const fixed = DATA.filter(t => t.status === 'fixed');
+  host.innerHTML = '';
+  if (!fixed.length) { host.innerHTML = '<div class="empty">Нечего проверять: тикетов в статусе fixed нет.</div>'; return; }
+  VERIFY_GROUPS.forEach(([key, caption]) => {
+    const items = fixed.filter(t => (t.verify || '') === key || (key === '' && !['review','build','test','bench'].includes(t.verify)));
+    if (!items.length) return;
+    const h = document.createElement('div');
+    h.className = 'group'; h.textContent = caption + ' (' + items.length + ')';
+    host.appendChild(h);
+    items.sort((a, b) => (PORD[a.priority] - PORD[b.priority])
+        || String(b.updated || '').localeCompare(String(a.updated || ''))).forEach(t => {
+      const v = S.verdicts[t.id] || '';
+      const card = document.createElement('div');
+      card.className = 'pt' + (v ? ' ' + v : '');
+      /* WHY a badge: the checklist is 20+ items long, so a newly fixed ticket is
+         invisible among the ones already checked last time — the user looked for
+         new items and did not find them. 'New' means: changed after the last
+         report was saved from this UI. */
+      const fresh = S.lastSaved && t.updated && t.updated >= S.lastSaved;
+      card.innerHTML = '<div class="pt-head"><span class="id" style="font-family:ui-monospace,Consolas,monospace">' + t.id + '</span>'
+        + '<span class="p ' + t.priority + '">' + t.priority + '</span>'
+        + '<span class="badge">' + t.area + '</span>'
+        + (fresh ? '<span class="badge" style="background:#1f6f3f;color:#eaffef">новое</span>' : '')
+        + '<b style="flex:1">' + esc(t.title) + '</b>'
+        + '<span class="badge" title="когда тикет менялся последний раз">' + (t.updated || '') + '</span>'
+        + '<button class="det">детали</button></div>';
+      const det = document.createElement('div');
+      det.hidden = true; det.style.marginTop = '8px';
+      det.innerHTML = md(t.body);
+      card.querySelector('.det').onclick = () => { det.hidden = !det.hidden; };
+      const act = document.createElement('div');
+      act.className = 'pt-actions';
+      const mk = (val, label, cls) => {
+        const b = document.createElement('button');
+        b.className = 'v' + (v === val ? ' on-' + cls : '');
+        b.textContent = label;
+        b.onclick = () => {
+          S.verdicts[t.id] = (S.verdicts[t.id] === val) ? '' : val;
+          save(); renderReview(); renderCounts();
+        };
+        return b;
+      };
+      const isBug = t.type === 'bug';
+      act.appendChild(mk('ok', isBug ? '✓ баг ушёл' : '✓ работает как надо', 'ok'));
+      act.appendChild(mk('fail', isBug ? '✗ баг остался' : '✗ работает не так', 'fail'));
+      const note = document.createElement('input');
+      note.type = 'text'; note.className = 'note';
+      note.placeholder = v === 'fail' ? 'что именно осталось не так (важно для агента)' : 'заметка (попадёт в историю тикета)';
+      note.value = S.notes[t.id] || '';
+      note.oninput = () => { S.notes[t.id] = note.value; save(); renderExport(); };
+      act.appendChild(note);
+      card.appendChild(act); card.appendChild(det);
+      host.appendChild(card);
+    });
+  });
+}
+
+/* ------------------------------------------------------------- feedback tab */
+function renderFeedback() {
+  const host = document.getElementById('fblist');
+  host.innerHTML = '';
+  if (!S.feedback.length) { host.innerHTML = '<div class="empty">Пунктов пока нет.</div>'; return; }
+  S.feedback.forEach((f, i) => {
+    const d = document.createElement('div');
+    d.className = 'fbitem';
+    d.innerHTML = '<span class="p ' + f.prio + '">' + f.prio + '</span><span class="badge">' + f.area + '</span>'
+      + '<span class="badge">' + f.type + '</span><span style="flex:1"><b>' + esc(f.title) + '</b>'
+      + (f.desc ? '<br><span style="color:var(--muted)">' + esc(f.desc) + '</span>' : '') + '</span>'
+      + '<span class="x" title="удалить">✕</span>';
+    d.querySelector('.x').onclick = () => { S.feedback.splice(i, 1); save(); renderFeedback(); renderCounts(); renderExport(); };
+    host.appendChild(d);
+  });
+}
+
+/* --------------------------------------------------------------- export tab */
+function renderExport() {
+  const ok = DATA.filter(t => S.verdicts[t.id] === 'ok');
+  const bad = DATA.filter(t => S.verdicts[t.id] === 'fail');
+  const d = today();
+  let r = '## Итоги ревью ' + d + '\n';
+  if (ok.length) {
+    r += '\n### Фикс работает, проблемы больше нет — ставь verified\n';
+    ok.forEach(t => { r += '- ' + t.id + ' — ' + t.title + (S.notes[t.id] ? ' — ' + S.notes[t.id] : '') + '\n'; });
+  }
+  if (bad.length) {
+    r += '\n### Фикс НЕ помог, проблема осталась — возвращай в open\n';
+    bad.forEach(t => { r += '- ' + t.id + ' — ' + t.title + (S.notes[t.id] ? ' — ' + S.notes[t.id] : ' — подробностей нет') + '\n'; });
+  }
+  if (S.feedback.length) {
+    r += '\n### Новый фидбек — заведи тикеты\n';
+    S.feedback.forEach((f, i) => {
+      r += (i + 1) + '. [' + f.prio + '/' + f.area + '/' + f.type + '] ' + f.title + '\n';
+      if (f.desc) r += '   ' + f.desc.replace(/\n/g, '\n   ') + '\n';
+    });
+  }
+  if (!ok.length && !bad.length && !S.feedback.length) r += '\n_Пока ничего не отмечено._\n';
+  document.getElementById('out1').value = r;
+
+  let c = '';
+  ok.forEach(t => {
+    c += 'node tools/tickets.mjs set -Id ' + t.id + ' -Status verified -Note "ревью ' + d + ': фикс работает'
+      + (S.notes[t.id] ? ' — ' + S.notes[t.id].replace(/"/g, "'") : '') + '"\n';
+  });
+  bad.forEach(t => {
+    c += 'node tools/tickets.mjs set -Id ' + t.id + ' -Status open -Note "ревью ' + d + ': фикс НЕ помог, проблема осталась — '
+      + (S.notes[t.id] || 'подробностей нет').replace(/"/g, "'") + '"\n';
+  });
+  if (c) c += 'node tools/tickets.mjs board\n';
+  document.getElementById('out2').value = c || '# отметок нет';
+}
+
+function renderCounts() {
+  document.getElementById('n-board').textContent = DATA.length;
+  const fixed = DATA.filter(t => t.status === 'fixed').length;
+  const done = Object.values(S.verdicts).filter(Boolean).length;
+  document.getElementById('n-pt').textContent = done ? done + '/' + fixed : fixed;
+  document.getElementById('n-fb').textContent = S.feedback.length || '';
+  renderExport();
+}
+
+/* ------------------------------------------------------------------- wiring */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === tab));
+    ['board','review','feedback','export'].forEach(v =>
+      document.getElementById('v-' + v).hidden = (v !== tab.dataset.v));
+    if (tab.dataset.v === 'export') renderExport();
+  };
+});
+document.getElementById('q').oninput = e => { F.q = e.target.value; renderBoard(); };
+chips(document.getElementById('f-prio'), ['P0','P1','P2','P3'], F.prio, renderBoard);
+chips(document.getElementById('f-status'), STATUSES, F.status, renderBoard);
+chips(document.getElementById('f-area'), AREAS, F.area, renderBoard);
+AREAS.forEach(a => { const o = document.createElement('option'); o.textContent = a; document.getElementById('fb-area').appendChild(o); });
+document.getElementById('fb-add').onclick = () => {
+  const title = document.getElementById('fb-title').value.trim();
+  if (!title) { document.getElementById('fb-title').focus(); return; }
+  S.feedback.push({
+    title, desc: document.getElementById('fb-desc').value.trim(),
+    prio: document.getElementById('fb-prio').value,
+    area: document.getElementById('fb-area').value,
+    type: document.getElementById('fb-type').value
+  });
+  save();
+  document.getElementById('fb-title').value = ''; document.getElementById('fb-desc').value = '';
+  renderFeedback(); renderCounts();
+};
+document.getElementById('pt-reset').onclick = () => {
+  if (!confirm('Сбросить все отметки проверки?')) return;
+  S.verdicts = {}; S.notes = {}; save(); renderReview(); renderCounts();
+};
+document.getElementById('clear').onclick = () => {
+  if (!confirm('Очистить отметки И собранный фидбек?')) return;
+  S.verdicts = {}; S.notes = {}; S.feedback = []; save();
+  renderReview(); renderFeedback(); renderCounts();
+};
+const copy = (id, btn) => {
+  const el = document.getElementById(id);
+  el.select(); document.execCommand('copy');
+  const old = btn.textContent; btn.textContent = 'скопировано ✓';
+  setTimeout(() => { btn.textContent = old; }, 1200);
+};
+/* Save the feedback as a file the agent can apply directly, so nothing has to be
+   copied by hand (user request 2026-07-26). A browser cannot write into the repo,
+   so this either asks for a location once (File System Access API, pick
+   tickets/feedback.json) or falls back to a normal download. */
+document.getElementById('save1').onclick = async e => {
+  const payload = JSON.stringify({
+    generated: new Date().toISOString(),
+    verdicts: S.verdicts,
+    notes: S.notes,
+    feedback: S.feedback
+  }, null, 2);
+  const btn = e.target;
+  const done = where => {
+    S.lastSaved = today(); save(); renderReview();
+    btn.textContent = 'Сохранено: ' + where; setTimeout(() => btn.textContent = 'Сохранить фидбек в файл', 2500);
+  };
+  try {
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'feedback.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(payload);
+      await writable.close();
+      done(handle.name);
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return; // user cancelled: say nothing
+  }
+  const blob = new Blob([payload], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'feedback.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  done('Downloads');
+};
+
+document.getElementById('copy1').onclick = e => copy('out1', e.target);
+document.getElementById('copy2').onclick = e => copy('out2', e.target);
+document.addEventListener('click', e => {
+  const id = e.target.dataset && e.target.dataset.goto;
+  if (!id) return;
+  e.preventDefault();
+  document.querySelector('.tab[data-v=board]').click();
+  F.q = id; document.getElementById('q').value = id; renderBoard();
+  const row = document.getElementById('row-' + id);
+  if (row) { row.click(); row.scrollIntoView({ block: 'center' }); }
+});
+
+renderBoard(); renderReview(); renderFeedback(); renderCounts();
+</script>
+</body>
+</html>
