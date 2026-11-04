@@ -71,6 +71,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     var onOpenEvent: (NextEvent) -> Unit = {}
     var onSearch: () -> Unit = {}
     var onHintsClosed: () -> Unit = {}
+    /** Тап по карточке с нашим же проигрывателем: true — открыт свой экран «Сейчас играет». */
+    var onNowPlaying: () -> Boolean = { false }
 
     /** Ближайшее событие календаря для карточки «Сейчас»; null — нет или нет разрешения. */
     var calendar: NextEvent? = null
@@ -92,6 +94,24 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     // Раздел, сохранённый с прошлого раза: применяется, как только он появится среди видимых.
     private var pendingSection: String? = null
+
+    /**
+     * Вложенный список (альбом → треки): пункт-папка открывает уровень в своём разделе levelCol. pos и posTarget
+     * раздела — всегда у верхнего уровня, позиция родителя хранится в уровне. depthPos — глубина с анимацией:
+     * родитель уезжает влево и сворачивается до выбранного пункта, ряд разделов — до значка текущего.
+     */
+    private class Level(val source: AppEntry, var items: List<AppEntry>, val parentPos: Int, val parentFrom: Float) {
+        var exitPos = 0f
+        var shown = ""
+        var shownFor = -1f
+    }
+    private val levels = ArrayList<Level>()
+    private var levelCol = -1
+    // Уровень, из которого только что вышли: доезжает вправо и гаснет.
+    private var leaving: Level? = null
+    private var depthPos = 0f
+    private var depthVel = 0f
+    private val levelPos = HashMap<String, Int>()
 
     // Док — 5 самых частых: снизу в портрете, вертикально у правого края в альбоме.
     private var dock: List<AppEntry> = emptyList()
@@ -148,7 +168,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     // SCRUB — жест начат на ряду разделов: ряд едет за пальцем на любое число разделов.
     // INDEX — у правого края длинной колонки: высота экрана — вся колонка, всплывает буква.
-    private enum class Drag { NONE, PENDING, H, V, MENU, SCRUB, INDEX }
+    // DEPTH — горизонтальный жест во вложенном списке: вправо — на уровень назад.
+    private enum class Drag { NONE, PENDING, H, V, MENU, SCRUB, INDEX, DEPTH }
     private var indexItem = -1
     private var drag = Drag.NONE
     private var downX = 0f
@@ -204,6 +225,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         textAlign = Paint.Align.CENTER
     }
     private val menuTitlePaint = textPaint(19f, Typeface.create("sans-serif-medium", Typeface.NORMAL))
+    private val levelTitlePaint = textPaint(19f, Typeface.create("sans-serif-medium", Typeface.NORMAL))
     private val menuItemPaint = textPaint(17f, Typeface.create("sans-serif", Typeface.NORMAL))
     private val dimPaint = Paint().apply { color = Color.BLACK }
     private val menuPaint = Paint().apply { color = 0xFF0A0E18.toInt() }
@@ -255,6 +277,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     }
     private var bubbleCenter = 0f
     private var labelCenter = 0f
+    private var levelTitleCenter = 0f
     private var menuCenter = 0f
 
     // Оформление: стекло (Аврора) — плашка выбранного пункта, карточка и док.
@@ -307,7 +330,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             Look.AURORA -> Fonts.interMedium
         }
         for (pt in arrayOf(labelPaint, subPaint, menuItemPaint, cardSubPaint)) pt.typeface = text
-        for (pt in arrayOf(catLabelPaint, menuTitlePaint, bubbleTextPaint)) {
+        for (pt in arrayOf(catLabelPaint, menuTitlePaint, bubbleTextPaint, levelTitlePaint)) {
             pt.typeface = title
             pt.letterSpacing = if (dot) 0.08f else 0f
         }
@@ -320,6 +343,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         lineClockPaint.letterSpacing = if (dot) 0.06f else 0f
         catLabelPaint.textSize = sp(if (dot) 17f else 15f)
         menuTitlePaint.textSize = sp(if (dot) 21f else 19f)
+        levelTitlePaint.textSize = menuTitlePaint.textSize
         lineClockPaint.textSize = sp(if (dot) 14f else 13f)
         badgePaint.color = if (dot) NOTHING_RED else 0xFFE5484D.toInt()
         menuPaint.color = when (look) {
@@ -330,25 +354,43 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         badgeCenter = -(badgeTextPaint.fontMetrics.ascent + badgeTextPaint.fontMetrics.descent) / 2f
         bubbleCenter = -(bubbleTextPaint.fontMetrics.ascent + bubbleTextPaint.fontMetrics.descent) / 2f
         labelCenter = -(labelPaint.fontMetrics.ascent + labelPaint.fontMetrics.descent) / 2f
+        levelTitleCenter = -(levelTitlePaint.fontMetrics.ascent + levelTitlePaint.fontMetrics.descent) / 2f
         menuCenter = -(menuItemPaint.fontMetrics.ascent + menuItemPaint.fontMetrics.descent) / 2f
         glyphs.clear()
         glows.clear()
         smallGlyphs.clear()
         for (col in columns) for (e in col) e.shownFor = -1f
+        for (l in levels) {
+            l.shownFor = -1f
+            for (e in l.items) e.shownFor = -1f
+        }
         if (width > 0) onSizeChanged(width, height, width, height)
         invalidate()
     }
 
     fun setColumns(cols: List<List<AppEntry>>, secs: List<Category>, dockApps: List<AppEntry>) {
-        if (secs.map { it.id } != sections.map { it.id }) resizeSections(secs)
+        if (secs.map { it.id } != sections.map { it.id }) {
+            resizeSections(secs)
+        } else {
+            // Пункт добавился выше выбранного («Сейчас играет», новое приложение) — выбор остаётся на своём пункте.
+            for (c in 0 until count) {
+                if (c == levelCol && levels.isNotEmpty()) continue
+                val key = columns[c].getOrNull(posTarget[c])?.key ?: continue
+                val i = cols[c].indexOfFirst { it.key == key }
+                if (i < 0 || i == posTarget[c]) continue
+                pos[c] += i - posTarget[c]
+                posTarget[c] = i
+                if (c == category) itemTick = i
+            }
+        }
         columns = cols
         val relayout = dock.isEmpty() != dockApps.isEmpty()
         dock = dockApps
         if (relayout && width > 0) onSizeChanged(width, height, width, height)
         refreshBadges()
-        if (pressCol >= 0 && pressIndex >= columns[pressCol].size) pressIndex = -1
+        if (pressCol in 0 until count && pressIndex >= items(pressCol).size) pressIndex = -1
         for (c in 0 until count) {
-            val last = max(0, columns[c].lastIndex)
+            val last = max(0, items(c).lastIndex)
             posTarget[c] = posTarget[c].coerceIn(0, last)
             if (pos[c] > last) pos[c] = last.toFloat()
         }
@@ -357,6 +399,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     /** Набор видимых разделов сменился: состояние колонок переносится по id, текущий раздел остаётся тем же. */
     private fun resizeSections(secs: List<Category>) {
+        dropLevels()
         val keep = pendingSection ?: sections.getOrNull(category)?.id
         val oldIds = sections.map { it.id }
         val oldPos = pos
@@ -400,6 +443,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     fun setCategory(index: Int, animate: Boolean = true) {
         val t = index.coerceIn(0, count - 1)
         if (t != category) {
+            dropLevels()
             if (animate) BgBus.kick(if (t > category) 3.5f else -3.5f)
             category = t
             onCategory(t)
@@ -417,6 +461,111 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         setCategory(col)
         if (index >= 0) posTarget[col] = index.coerceIn(0, max(0, columns[col].lastIndex))
         invalidate()
+    }
+
+    /** Список, который сейчас листается в разделе c: верхний открытый уровень или сама колонка. */
+    private fun items(c: Int): List<AppEntry> = if (c == levelCol && levels.isNotEmpty()) levels.last().items else columns[c]
+
+    /** Шаг уровня вглубь: родитель уезжает влево так, что его значок целиком у левого края. */
+    private fun levelShift(): Float = focusX - iconDraw / 2 - 10 * dp
+
+    private fun enter(entry: AppEntry, list: List<AppEntry>) {
+        val c = category
+        if (levels.isEmpty()) levelCol = c
+        leaving = null
+        // Родитель встаёт на открытый пункт: тапнуть можно и не выбранный.
+        val from = items(c).indexOf(entry).takeIf { it >= 0 } ?: posTarget[c]
+        levels += Level(entry, list, from, pos[c])
+        val at = (levelPos[entry.key] ?: 0).coerceIn(0, max(0, list.lastIndex))
+        pos[c] = at.toFloat()
+        posVel[c] = 0f
+        posTarget[c] = at
+        itemTick = at
+        performHapticFeedback(Haptics.SECTION)
+        invalidate()
+    }
+
+    /** «Назад» из вложенного списка: на уровень вверх; false — уровней нет. */
+    fun back(): Boolean {
+        if (levels.isEmpty()) return false
+        val top = levels.removeAt(levels.lastIndex)
+        levelPos[top.source.key] = posTarget[levelCol]
+        top.exitPos = pos[levelCol]
+        leaving = top
+        restore(top.parentPos)
+        performHapticFeedback(Haptics.SECTION)
+        invalidate()
+        return true
+    }
+
+    /** Закрыть все уровни разом — тап по ряду разделов, «Домой». */
+    fun closeLevels(): Boolean {
+        if (levels.isEmpty()) return false
+        val top = levels.last()
+        levelPos[top.source.key] = posTarget[levelCol]
+        top.exitPos = pos[levelCol]
+        leaving = top
+        val root = levels[0].parentPos
+        levels.clear()
+        depthPos = min(depthPos, 1f)
+        restore(root)
+        performHapticFeedback(Haptics.SECTION)
+        invalidate()
+        return true
+    }
+
+    /** Без анимации: раздел сменился или пересобрался. */
+    private fun dropLevels() {
+        leaving = null
+        if (levels.isEmpty()) return
+        val root = levels[0].parentPos
+        levels.clear()
+        depthPos = 0f
+        depthVel = 0f
+        restore(root)
+    }
+
+    private fun restore(at: Int) {
+        val c = levelCol
+        val p = at.coerceIn(0, max(0, columns[c].lastIndex))
+        pos[c] = p.toFloat()
+        posVel[c] = 0f
+        posTarget[c] = p
+        itemTick = p
+    }
+
+    /** Пересобрать открытый уровень с этим пунктом-источником (очередь сменилась); опустевший верхний — закрыть. */
+    fun refreshLevel(key: String) {
+        for (l in levels) {
+            if (l.source.key != key) continue
+            l.items = l.source.children?.invoke() ?: continue
+        }
+        if (levels.isEmpty()) return
+        if (levels.last().source.key == key && levels.last().items.isEmpty()) {
+            back()
+            return
+        }
+        val last = max(0, levels.last().items.lastIndex)
+        posTarget[levelCol] = posTarget[levelCol].coerceIn(0, last)
+        if (pos[levelCol] > last) pos[levelCol] = last.toFloat()
+        invalidate()
+    }
+
+    /** Открыть пункт-папку раздела по ключу — «Сейчас играет» из карточки и уведомления. */
+    fun openFolder(sectionId: String, key: String): Boolean {
+        val c = sections.indexOfFirst { it.id == sectionId }
+        if (c < 0) return false
+        val i = columns[c].indexOfFirst { it.key == key }
+        if (i < 0) return false
+        if (c == levelCol && levels.lastOrNull()?.source?.key == key && c == category) return true
+        val e = columns[c][i]
+        val open = e.children ?: return false
+        dropLevels()
+        setCategory(c)
+        pos[c] = i.toFloat()
+        posTarget[c] = i
+        enter(e, open())
+        return true
     }
 
     fun showHints() {
@@ -517,10 +666,12 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         if (ownBackground) bg.draw(canvas, advance = !frozen) else canvas.drawColor(Color.TRANSPARENT, BlendMode.CLEAR)
 
         val c0 = floor(catPos).toInt()
+        val dive = depthPos.coerceIn(0f, 1f)
         for (c in c0..c0 + 1) {
             if (c !in 0 until count) continue
-            val a = 1f - abs(c - catPos) * 1.3f
-            if (a > 0.01f) drawColumn(canvas, c, (c - catPos) * catSpacing, a)
+            var a = 1f - abs(c - catPos) * 1.3f
+            if (c != category) a *= 1f - dive
+            if (a > 0.01f) drawStack(canvas, c, (c - catPos) * catSpacing, a)
         }
         drawBar(canvas)
         drawCard(canvas)
@@ -586,6 +737,18 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 posVel[c] = 0f
             }
         }
+        if (drag != Drag.DEPTH) {
+            val diff = levels.size - depthPos
+            if (abs(diff) > 0.0005f || abs(depthVel) > 0.002f) {
+                depthVel += (STIFFNESS * diff - DAMPING * depthVel) * dt
+                depthPos += depthVel * dt
+                moving = true
+            } else {
+                depthPos = levels.size.toFloat()
+                depthVel = 0f
+            }
+        }
+        if (leaving != null && depthPos <= levels.size + 0.02f) leaving = null
         val mt = if (menuOpen) 1f else 0f
         if (abs(menuT - mt) > 0.002f) {
             menuT += (mt - menuT) * (1f - exp(-dt * 18f))
@@ -613,15 +776,45 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         return a
     }
 
-    private fun drawColumn(canvas: Canvas, c: Int, ox: Float, alpha: Float) {
-        val list = columns[c]
+    /**
+     * Раздел c со всеми открытыми уровнями: уровень k стоит на (k - depthPos) шагов правее места колонки;
+     * левее — свёрнутый родитель, правее — входящий или уходящий уровень, гаснет.
+     */
+    private fun drawStack(canvas: Canvas, c: Int, ox: Float, alpha: Float) {
+        if (c != levelCol || (levels.isEmpty() && leaving == null)) {
+            drawColumn(canvas, columns[c], pos[c], ox, alpha, c == pressCol, 0f)
+            return
+        }
+        val n = levels.size
+        val shift = levelShift()
+        for (k in 0..n + 1) {
+            val l = when {
+                k == 0 -> null
+                k <= n -> levels[k - 1]
+                else -> leaving ?: continue
+            }
+            val rel = k - depthPos
+            if (rel < -1.5f || rel >= 1f) continue
+            val list = l?.items ?: columns[c]
+            val fold = (-rel).coerceIn(0f, 1f)
+            val p = when {
+                k < n -> levels[k].let { it.parentFrom + (it.parentPos - it.parentFrom) * min(1f, fold * 1.5f) }
+                k == n -> pos[c]
+                else -> l!!.exitPos
+            }
+            // Входящий и уходящий уровень гаснет в первой половине пути — не наползает текстом на родителя.
+            val a = if (rel > 0f) alpha * (1f - rel * 1.8f).coerceAtLeast(0f) else alpha
+            drawColumn(canvas, list, p, ox + rel * shift, a, k == n && c == pressCol, fold)
+        }
+    }
+
+    /** Колонка с позицией p. fold — свёрнутость родителя: 1 — виден один выбранный пункт, без подписи. */
+    private fun drawColumn(canvas: Canvas, list: List<AppEntry>, p: Float, ox: Float, alpha: Float, press: Boolean, fold: Float) {
         if (list.isEmpty()) {
-            subPaint.fade((alpha * 150).toInt())
+            subPaint.fade((alpha * (1f - fold) * 150).toInt())
             canvas.drawText(emptyText, textX + ox, selY + labelCenter, subPaint)
             return
         }
-        if (textMaxW != list[0].shownFor) for (e in list) ellipsize(e)
-        val p = pos[c]
         val first = max(0, floor(p).toInt() - ABOVE_ROWS)
         val last = min(list.lastIndex, (p + (height - selY) / itemH).toInt() + 1)
         val cx = focusX + ox
@@ -630,16 +823,19 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             val y = itemY(d)
             val near = max(0f, 1f - abs(d))
             val base = if (d < -0.5f) ABOVE_ALPHA else BELOW_ALPHA
-            val a = alpha * (base + (1f - base) * near) * edgeAlpha(y)
+            var a = alpha * (base + (1f - base) * near) * edgeAlpha(y)
+            if (fold > 0f) a *= if (abs(d) < 0.5f) 1f - FOLD_DIM * fold else 1f - fold
             if (a <= 0.01f) continue
             val e = list[i]
+            if (e.shownFor != textMaxW) ellipsize(e)
+            val ta = a * (1f - fold)
             val half = iconDraw / 2f * (1f + SEL_GROW * near)
-            if (look == Look.AURORA && near > 0.02f) {
+            if (look == Look.AURORA && near > 0.02f && ta > 0.01f) {
                 val right = if (width > height) textX + ox + e.shownW + 20 * dp else width - 16 * dp
                 dst.set(cx - half - 14 * dp, y - itemH / 2 + 4 * dp, right, y + itemH / 2 - 4 * dp)
-                glass(canvas, dst, itemH / 2, a * near)
+                glass(canvas, dst, itemH / 2, ta * near)
             }
-            if (c == pressCol && i == pressIndex) {
+            if (press && i == pressIndex) {
                 pressPaint.alpha = (a * 34).toInt()
                 val right = if (width > height) textX + ox + e.shownW + 16 * dp else width - 12 * dp
                 dst.set(cx - half - 12 * dp, y - itemH / 2 + 5 * dp, right, y + itemH / 2 - 5 * dp)
@@ -655,13 +851,14 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 placeholderPaint.alpha = (a * 50).toInt()
                 canvas.drawRoundRect(dst, half * 0.4f, half * 0.4f, placeholderPaint)
             }
-            labelPaint.fade((a * 255).toInt())
+            if (ta <= 0.01f) continue
+            labelPaint.fade((ta * 255).toInt())
             val sub = e.shownSub
             if (sub == null) {
                 canvas.drawText(e.shown, textX + ox, y + labelCenter, labelPaint)
             } else {
                 canvas.drawText(e.shown, textX + ox, y - 2 * dp, labelPaint)
-                subPaint.fade((a * 180).toInt())
+                subPaint.fade((ta * 180).toInt())
                 canvas.drawText(sub, textX + ox, y + 18 * dp, subPaint)
             }
         }
@@ -675,12 +872,16 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     }
 
     private fun drawBar(canvas: Canvas) {
+        // Во вложенном списке ряд уезжает влево вместе с колонкой, остаётся значок текущего раздела.
+        val dive = depthPos.coerceIn(0f, 1f)
+        val shift = levelShift()
         for (i in 0 until count) {
-            val x = focusX + (i - catPos) * catSpacing
+            val x = focusX + (i - catPos) * catSpacing - dive * shift
             if (x < -catSpacing || x > width + catSpacing) continue
             val d = abs(i - catPos)
             val t = min(d, 1f)
-            val edge = if (dockW > 0f) ((width - dockW - x) / (catSpacing * 0.5f)).coerceIn(0f, 1f) else 1f
+            var edge = if (dockW > 0f) ((width - dockW - x) / (catSpacing * 0.5f)).coerceIn(0f, 1f) else 1f
+            if (i != category) edge *= 1f - dive
             if (edge <= 0f) continue
             val size = catBig + (catSmall - catBig) * t
             val glyph = sections[i].glyph
@@ -698,11 +899,28 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 badgePaint.alpha = ((1f - 0.45f * t) * 255 * edge).toInt()
                 canvas.drawCircle(x + size * 0.42f, barY - size * 0.42f, 4.5f * dp, badgePaint)
             }
-            val la = (1f - d * 1.8f).coerceIn(0f, 1f)
+            val la = (1f - d * 1.8f).coerceIn(0f, 1f) * (1f - dive)
             if (la > 0f) {
                 catLabelPaint.fade((la * 255).toInt())
                 canvas.drawText(titles[i], x, barY + catBig / 2 + 26 * dp, catLabelPaint)
             }
+        }
+        if (levelCol != category) return
+        // Название открытого уровня — в ряду разделов, над его колонкой.
+        val n = levels.size
+        val x0 = focusX - iconDraw / 2
+        for (k in 1..n + 1) {
+            val l = if (k <= n) levels[k - 1] else leaving ?: continue
+            val t = 1f - abs(k - depthPos)
+            if (t <= 0.01f) continue
+            val x = x0 + (k - depthPos) * shift * 0.5f
+            val w = width - x0 - 20 * dp - dockW
+            if (l.shownFor != w) {
+                l.shown = TextUtils.ellipsize(l.source.label, levelTitlePaint, w, TextUtils.TruncateAt.END).toString()
+                l.shownFor = w
+            }
+            levelTitlePaint.fade((t * 255).toInt())
+            canvas.drawText(l.shown, x, barY + levelTitleCenter, levelTitlePaint)
         }
     }
 
@@ -996,7 +1214,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     }
 
     private fun drawIndexBubble(canvas: Canvas) {
-        val list = columns[dragCol]
+        val list = items(dragCol)
         val letter = list.getOrNull(indexItem)?.label?.firstOrNull()?.uppercaseChar() ?: return
         val top = barY + 60 * dp
         val bottom = height - bottomInset - 24 * dp
@@ -1134,7 +1352,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         // Касание по летящему списку только останавливает его, а не запускает пункт под пальцем.
         stoppedFling = abs(posVel[dragCol]) > 1.5f
         if (stoppedFling) {
-            posTarget[dragCol] = pos[dragCol].roundToInt().coerceIn(0, max(0, columns[dragCol].lastIndex))
+            posTarget[dragCol] = pos[dragCol].roundToInt().coerceIn(0, max(0, items(dragCol).lastIndex))
             posVel[dragCol] = 0f
         }
         pressCard = cardAt(e.x, e.y)
@@ -1159,10 +1377,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     /** Полоса быстрой прокрутки: правый край под рядом разделов, только у колонок длиннее экрана. */
     private fun inIndexStrip(x: Float, y: Float): Boolean =
-        x > width - INDEX_STRIP * dp && y > barY + 60 * dp && columns[dragCol].size > INDEX_MIN
+        x > width - INDEX_STRIP * dp && y > barY + 60 * dp && items(dragCol).size > INDEX_MIN
 
     private fun indexTo(y: Float) {
-        val list = columns[dragCol]
+        val list = items(dragCol)
         val top = barY + 60 * dp
         val bottom = height - bottomInset - 24 * dp
         val f = ((y - top) / (bottom - top)).coerceIn(0f, 1f)
@@ -1186,7 +1404,12 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             pressCard = CARD_NONE
             val onBar = pressCat >= 0
             pressCat = -1
-            drag = if (abs(dx) > abs(dy)) (if (onBar) Drag.SCRUB else Drag.H) else Drag.V
+            drag = when {
+                abs(dx) <= abs(dy) -> Drag.V
+                levels.isNotEmpty() && dragCol == levelCol -> Drag.DEPTH
+                onBar -> Drag.SCRUB
+                else -> Drag.H
+            }
             downX = e.x
             downY = e.y
             dragStartCat = catPos
@@ -1217,9 +1440,16 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 }
                 catVel = 0f
             }
+            // Уровень едет за пальцем вправо, родитель разворачивается; влево — «резинка».
+            Drag.DEPTH -> {
+                val n = levels.size.toFloat()
+                val p = n - (e.x - downX) / levelShift()
+                depthPos = if (p > n) n + (p - n) * RUBBER else max(p, n - 1f)
+                depthVel = 0f
+            }
             Drag.V -> {
                 val p = dragStartPos - (e.y - downY) / itemH
-                val maxP = max(0, columns[dragCol].lastIndex).toFloat()
+                val maxP = max(0, items(dragCol).lastIndex).toFloat()
                 pos[dragCol] = when {
                     p < 0f -> p * RUBBER
                     p > maxP -> maxP + (p - maxP) * RUBBER
@@ -1253,7 +1483,11 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             Drag.V -> {
                 val c = dragCol
                 posVel[c] = (-vy / itemH).coerceIn(-40f, 40f)
-                posTarget[c] = (pos[c] + posVel[c] * FLING_TIME).roundToInt().coerceIn(0, max(0, columns[c].lastIndex))
+                posTarget[c] = (pos[c] + posVel[c] * FLING_TIME).roundToInt().coerceIn(0, max(0, items(c).lastIndex))
+            }
+            Drag.DEPTH -> {
+                depthVel = (-vx / levelShift()).coerceIn(-6f, 6f)
+                if (levels.size - depthPos > SWIPE_SHARE || -depthVel > SWIPE_VELOCITY) back()
             }
             Drag.SCRUB -> {
                 catVel = (-vx / catSpacing).coerceIn(-10f, 10f)
@@ -1285,7 +1519,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
                 CARD_PREV -> NowPlaying.previous()
                 CARD_TOGGLE -> NowPlaying.toggle()
                 CARD_NEXT -> NowPlaying.next()
-                CARD_MEDIA -> NowPlaying.open(context)
+                CARD_MEDIA -> if (!onNowPlaying()) NowPlaying.open(context)
                 CARD_EVENT -> calendar?.let(onOpenEvent)
             }
             return
@@ -1302,6 +1536,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         }
         if (stoppedFling) return
         if (pressCat >= 0) {
+            if (closeLevels()) return
             if (pressCat == category && abs(catPos - category) < 0.01f) {
                 posTarget[category] = 0
             } else {
@@ -1309,8 +1544,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             }
             return
         }
-        val entry = columns.getOrNull(pressCol)?.getOrNull(pressIndex)
+        val entry = if (pressCol in 0 until count) items(pressCol).getOrNull(pressIndex) else null
         if (entry == null) {
+            // Во вложенном списке тап по свёрнутому родителю слева — назад.
+            if (levels.isNotEmpty() && downX < focusX - iconDraw / 2 - 8 * dp && back()) return
             val now = System.nanoTime()
             if (now - lastEmptyTap < DOUBLE_TAP_NS && hypot(downX - emptyTapX, downY - emptyTapY) < 48 * dp) {
                 lastEmptyTap = 0L
@@ -1327,6 +1564,18 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     /** Запуск пункта на расстоянии d от места выбранного; значок — точка, откуда разворачивается окно. */
     private fun launchAt(entry: AppEntry, d: Float) {
+        val open = entry.children
+        if (open != null) {
+            enter(entry, open())
+            return
+        }
+        val act = entry.action
+        if (act != null) {
+            performHapticFeedback(Haptics.TAP)
+            act()
+            invalidate()
+            return
+        }
         val y = itemY(d).toInt()
         val half = (iconDraw / 2).toInt()
         launchRect.set(focusX.toInt() - half, y - half, focusX.toInt() + half, y + half)
@@ -1357,10 +1606,15 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         }
         if (menuOpen) return menuKey(code)
         val c = category
-        val last = max(0, columns.getOrNull(c)?.lastIndex ?: 0)
+        val last = max(0, if (c in 0 until count) items(c).lastIndex else 0)
         when (code) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> setCategory(c - 1)
-            KeyEvent.KEYCODE_DPAD_RIGHT -> setCategory(c + 1)
+            // Во вложенном списке ← — назад, → — в папку; в колонке раздела — соседние разделы.
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (!back()) setCategory(c - 1)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (levels.isEmpty()) {
+                setCategory(c + 1)
+            } else {
+                selected()?.takeIf { it.children != null }?.let { launchAt(it, 0f) }
+            }
             KeyEvent.KEYCODE_DPAD_UP -> posTarget[c] = (posTarget[c] - 1).coerceIn(0, last)
             KeyEvent.KEYCODE_DPAD_DOWN -> posTarget[c] = (posTarget[c] + 1).coerceIn(0, last)
             KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_PAGE_UP -> posTarget[c] = (posTarget[c] - PAGE).coerceIn(0, last)
@@ -1379,7 +1633,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         return true
     }
 
-    private fun selected(): AppEntry? = columns.getOrNull(category)?.getOrNull(posTarget[category])
+    private fun selected(): AppEntry? = if (category in 0 until count) items(category).getOrNull(posTarget[category]) else null
 
     private fun menuKey(code: Int): Boolean {
         val n = menuItems.size
@@ -1399,7 +1653,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     }
 
     private fun openMenuForPress() {
-        val entry = dock.getOrNull(pressDock) ?: columns.getOrNull(pressCol)?.getOrNull(pressIndex) ?: return
+        val entry = dock.getOrNull(pressDock) ?: (if (pressCol in 0 until count) items(pressCol).getOrNull(pressIndex) else null) ?: return
         pressDock = -1
         val items = onMenu(entry)
         drag = Drag.NONE
@@ -1430,9 +1684,11 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     /** Пункт под пальцем: ближайший по центру среди видимых; в альбоме — только по значку с подписью. */
     private fun hitItem(col: Int, x: Float, y: Float): Int {
-        val list = columns[col]
+        val list = items(col)
         val narrow = width > height
         if (list.isEmpty() || (narrow && x < focusX - iconDraw / 2 - 16 * dp)) return -1
+        // Слева во вложенном списке — свёрнутый родитель: тап по нему ведёт назад, а не в пункт.
+        if (col == levelCol && levels.isNotEmpty() && x < focusX - iconDraw / 2 - 8 * dp) return -1
         val p = pos[col]
         val first = max(0, floor(p).toInt() - ABOVE_ROWS)
         val last = min(list.lastIndex, (p + (height - selY) / itemH).toInt() + 1)
@@ -1464,6 +1720,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         const val ABOVE_ALPHA = 0.55f
         const val BELOW_ALPHA = 0.82f
         const val SEL_GROW = 0.14f
+        const val FOLD_DIM = 0.4f
         const val MENU_WIDTH = 0.66f
         const val IDLE_NS = 5_000_000_000L
         const val IDLE_FRAME_MS = 33L

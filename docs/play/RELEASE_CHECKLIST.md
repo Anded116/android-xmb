@@ -36,6 +36,7 @@ keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 4
 - ☐ **Политика конфиденциальности** — публичный URL с текстом `PRIVACY.md`. Репозиторий будет закрытым,
   поэтому не GitHub Pages из него: подойдут отдельный публичный репозиторий с Pages, Google Sites или gist.
 - ☐ App content по `DATA_SAFETY.md`: Data safety, реклама, доступ, рейтинг, целевая аудитория.
+- ☐ **Декларация фоновой службы** `mediaPlayback` (проигрыватель «Музыки»): описание и ссылка на видео — `DATA_SAFETY.md`.
 - ☐ Страны и цена.
 
 ## Проверка перед выпуском

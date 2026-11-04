@@ -67,7 +67,10 @@ object Notices {
     }
 }
 
-/** Что играет: заголовок, исполнитель, пауза/воспроизведение и кнопки. Нужен тот же доступ к уведомлениям. */
+/**
+ * Что играет: заголовок, исполнитель, пауза/воспроизведение и кнопки. Чужие плееры видны через тот же доступ
+ * к уведомлениям; свой проигрыватель (Music) — и без него.
+ */
 object NowPlaying {
     var title: String? = null
         private set
@@ -120,8 +123,19 @@ object NowPlaying {
         read()
     }
 
+    fun refresh() = read()
+
     private fun read() {
         val c = controller?.takeIf { it.playbackState?.state in LIVE_STATES }
+        val own = Music.current
+        if (c == null && own != null) {
+            title = own.title
+            artist = own.artist
+            playing = Music.playing
+            pkg = Music.pkg
+            Notices.changed()
+            return
+        }
         val md = c?.metadata
         title = md?.getString(MediaMetadata.METADATA_KEY_TITLE)?.takeIf { it.isNotBlank() }
         artist = md?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
@@ -131,13 +145,13 @@ object NowPlaying {
     }
 
     fun toggle() {
-        val t = controller?.transportControls ?: return
+        val t = controller?.transportControls ?: return Music.toggle()
         if (playing) t.pause() else t.play()
     }
 
-    fun next() = controller?.transportControls?.skipToNext()
+    fun next() = controller?.transportControls?.skipToNext() ?: Music.next()
 
-    fun previous() = controller?.transportControls?.skipToPrevious()
+    fun previous() = controller?.transportControls?.skipToPrevious() ?: Music.previous()
 
     /**
      * Открыть плеер — его экран из сессии, а если сессия его не дала — само приложение.

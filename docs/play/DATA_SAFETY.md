@@ -26,6 +26,8 @@
 | Что | Нужна декларация | Комментарий |
 |---|---|---|
 | `READ_CALENDAR` | Нет | Не входит в ограниченные группы Play (SMS, звонки, фон-геолокация, все файлы). |
+| `READ_MEDIA_AUDIO` | Нет | Политика Play «Photo and Video Permissions» касается только картинок и видео; аудио — обычное разрешение. |
+| `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | **Да** | App content → Foreground service permissions: тип `mediaPlayback`, «воспроизведение музыки, выбранной пользователем, в фоне», ссылка на короткое видео (запуск трека → экран гаснет → музыка играет, управление из уведомления). |
 | Доступ к уведомлениям (`NotificationListenerService`) | Нет | Пользователь выдаёт сам в настройках; описать в политике — сделано. |
 | `REQUEST_DELETE_PACKAGES` | Нет | Ограничен только `REQUEST_INSTALL_PACKAGES`. |
 | `QUERY_ALL_PACKAGES` | — | Не используется: список приложений — через `<queries>` и `LauncherApps`. |

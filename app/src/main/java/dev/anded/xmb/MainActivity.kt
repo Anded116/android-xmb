@@ -8,6 +8,7 @@ import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Rect
@@ -34,11 +35,17 @@ class MainActivity : Activity() {
     private lateinit var xmb: XmbView
     private lateinit var search: SearchLayer
     private lateinit var repo: AppRepository
+    private lateinit var music: MusicLibrary
     private lateinit var launcherApps: LauncherApps
     private var fastModeId = 0
     // Лаунчер уходил с экрана (onStop) и ещё не вернулся (onResume). Пауза — не признак: перед onNewIntent Android
     // ставит на паузу и видимую активность, а остановленную до onNewIntent успевает запустить (onStart).
     private var wasStopped = true
+
+    // «Сейчас играет» просили открыть (уведомление), а колонка ещё не собрана.
+    private var openNow = false
+    private var shownTrack: Track? = null
+    private var hadQueue = false
 
     /** Приложение, поверх которого кнопкой открыли поиск: закрытие поиска возвращает в него. */
     private var searchFrom: String? = null
@@ -61,7 +68,11 @@ class MainActivity : Activity() {
             // «Частые» повторяют приложения из разделов — в поиске по одному разу; плюс ярлыки приложений.
             search.entries = repo.columns.flatten().filter { it.special == null }.distinctBy { it.key } + repo.shortcuts
             if (!wasStopped) askFresh()
+            if (openNow && xmb.openFolder("music", MusicLibrary.NOW)) openNow = false
         }
+        music = MusicLibrary(ui, iconPx, onArt = { xmb.postInvalidate() }, onAsk = ::askAudio)
+        repo.extras = { id -> if (id == "music") music.roots() else emptyList() }
+        Music.listen(musicChanged)
 
         val start = repo.prefs.getString(PREF_LAST, Categories.TOP) ?: Categories.TOP
         xmb.restoreSection(start)
@@ -73,6 +84,7 @@ class MainActivity : Activity() {
         search.onLaunch = ::launch
         xmb.onOpenEvent = { open(it.openIntent()) }
         xmb.onSearch = ::toggleSearch
+        xmb.onNowPlaying = { NowPlaying.pkg == packageName && xmb.openFolder("music", MusicLibrary.NOW) }
         // Первый запуск: после подсказок — один раз предложить стать домашним экраном.
         xmb.onHintsClosed = {
             if (!repo.prefs.getBoolean(PREF_ASKED_HOME, false)) {
@@ -97,7 +109,10 @@ class MainActivity : Activity() {
      * закрытие (кнопкой или «назад») возвращает в него.
      */
     private fun handleKey(intent: Intent?) {
-        if (intent?.getStringExtra(EXTRA_KEY) == KEY_SEARCH) toggleSearch()
+        when (intent?.getStringExtra(EXTRA_KEY)) {
+            KEY_SEARCH -> toggleSearch()
+            KEY_MUSIC -> if (!xmb.openFolder("music", MusicLibrary.NOW)) openNow = true
+        }
         intent?.removeExtra(EXTRA_KEY)
     }
 
@@ -200,6 +215,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        Music.unlisten(musicChanged)
         repo.stop()
         super.onDestroy()
     }
@@ -207,13 +223,15 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         xmb.closeMenu()
+        // «Домой» на самом лаунчере — из вложенного списка к колонке раздела.
+        if (!wasStopped) xmb.closeLevels()
         handleKey(intent)
     }
 
     // С целевым API 36 «назад» приходит только сюда (onBackPressed не вызывается). Лаунчер — домашний экран:
     // «назад» всегда наш — закрыть поиск, подсказки или меню, иначе ничего.
     private val back = OnBackInvokedCallback {
-        if (search.open) closeSearch() else if (!xmb.closeHints()) xmb.closeMenu()
+        if (search.open) closeSearch() else if (!xmb.closeHints() && !xmb.closeMenu()) xmb.back()
     }
 
     /**
@@ -278,9 +296,30 @@ class MainActivity : Activity() {
         if (requestCode == REQ_HOME) repo.reload()
     }
 
+    /** Уровень «Сейчас играет» и пункт в колонке следят за проигрывателем; колонка пересобирается при смене трека. */
+    private val musicChanged: () -> Unit = {
+        xmb.refreshLevel(MusicLibrary.NOW)
+        val t = Music.current
+        if (t !== shownTrack || (t != null) != hadQueue) {
+            shownTrack = t
+            hadQueue = t != null
+            repo.reload()
+        }
+    }
+
+    /** Доступ к музыке; если система больше не спрашивает (отказали дважды) — страница приложения в настройках. */
+    private fun askAudio() {
+        requestPermissions(arrayOf(Manifest.permission.READ_MEDIA_AUDIO), REQ_AUDIO)
+    }
+
     @Deprecated("Activity API")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_AUDIO && grantResults.firstOrNull() == PackageManager.PERMISSION_DENIED &&
+            !shouldShowRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)
+        ) {
+            open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+        }
         refreshCalendar()
         repo.reload()
     }
@@ -559,7 +598,9 @@ class MainActivity : Activity() {
         private const val PREF_HINTS = "hints_shown"
         private const val PREF_ASKED_HOME = "asked_home"
         private const val REQ_HOME = 2
+        private const val REQ_AUDIO = 3
         const val EXTRA_KEY = "dev.anded.xmb.KEY"
         const val KEY_SEARCH = "search"
+        const val KEY_MUSIC = "music"
     }
 }

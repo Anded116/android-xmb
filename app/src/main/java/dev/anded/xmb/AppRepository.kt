@@ -41,6 +41,9 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
     private val icons = ConcurrentHashMap<String, Bitmap>()
     private val requested = AtomicInteger()
 
+    /** Свои пункты раздела по id — в начало колонки (музыка на устройстве); зовётся из потока сборки. */
+    var extras: (String) -> List<AppEntry> = { emptyList() }
+
     /** Раздел на экране (id) — его значки рисуются первыми. */
     @Volatile var focusColumn = Categories.TOP
 
@@ -166,6 +169,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         val collator = Collator.getInstance(Locale.forLanguageTag("ru"))
         for (list in cols) list.sortWith { a, b -> collator.compare(a.label, b.label) }
         cols[Categories.SETTINGS].addAll(0, specials())
+        if (media) cols[Categories.indexOf("music")].addAll(0, extras("music"))
         return cols
     }
 

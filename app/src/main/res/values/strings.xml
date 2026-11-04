@@ -145,4 +145,36 @@
     <string name="hint_dock">Your five apps: long-press an app to add, remove or reorder</string>
     <string name="hint_settings_t">«Settings» section</string>
     <string name="hint_settings">Theme, background, icons, notifications, calendar, these tips</string>
+    <!-- Музыка (LNC-A0011) -->
+    <string name="music_library">Music on this device</string>
+    <string name="music_allow">Allow access to music files</string>
+    <string name="music_none">No music found</string>
+    <string name="music_none_sub">Put audio files into the Music folder</string>
+    <string name="music_now">Now playing</string>
+    <string name="music_shuffle_all">Shuffle all</string>
+    <string name="music_shuffle">Shuffle</string>
+    <string name="music_tracks">All tracks</string>
+    <string name="music_albums">Albums</string>
+    <string name="music_artists">Artists</string>
+    <string name="music_play">Play</string>
+    <string name="music_pause">Pause</string>
+    <string name="music_next">Next track</string>
+    <string name="music_prev">Previous track</string>
+    <string name="music_stop">Stop</string>
+    <string name="music_playing">Playing</string>
+    <string name="music_unknown">Unknown</string>
+    <string name="music_various">Various artists</string>
+    <string name="music_channel">Music</string>
+    <plurals name="music_n_tracks">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+    <plurals name="music_n_albums">
+        <item quantity="one">%d album</item>
+        <item quantity="other">%d albums</item>
+    </plurals>
+    <plurals name="music_n_artists">
+        <item quantity="one">%d artist</item>
+        <item quantity="other">%d artists</item>
+    </plurals>
 </resources>

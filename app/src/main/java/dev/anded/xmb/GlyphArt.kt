@@ -58,6 +58,12 @@ object GlyphArt {
         Glyph.PHOTO -> R.drawable.xmb_photo
         Glyph.MUSIC -> R.drawable.xmb_music
         Glyph.VIDEO -> R.drawable.xmb_video
+        Glyph.ALBUM -> R.drawable.xmb_album
+        Glyph.ARTIST -> R.drawable.xmb_artist
+        Glyph.SHUFFLE -> R.drawable.xmb_shuffle
+        Glyph.TRACKS -> R.drawable.xmb_tracks
+        Glyph.QUEUE -> R.drawable.xmb_queue
+        Glyph.STOP -> R.drawable.xmb_stop
     }
 
     /** Значок size×size с полем pad вокруг под тень; центр значка — центр Bitmap. */

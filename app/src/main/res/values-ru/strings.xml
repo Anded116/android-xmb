@@ -143,4 +143,42 @@
     <string name="hint_dock">Свои пять приложений: долгий тап по приложению — добавить, убрать, переставить</string>
     <string name="hint_settings_t">Раздел «Настройки»</string>
     <string name="hint_settings">Тема, фон, значки, уведомления, календарь, эти подсказки</string>
+    <!-- Музыка (LNC-A0011) -->
+    <string name="music_library">Музыка на устройстве</string>
+    <string name="music_allow">Разрешить доступ к музыке</string>
+    <string name="music_none">Музыка не найдена</string>
+    <string name="music_none_sub">Положите файлы в папку Music</string>
+    <string name="music_now">Сейчас играет</string>
+    <string name="music_shuffle_all">Перемешать всё</string>
+    <string name="music_shuffle">Перемешать</string>
+    <string name="music_tracks">Все треки</string>
+    <string name="music_albums">Альбомы</string>
+    <string name="music_artists">Исполнители</string>
+    <string name="music_play">Играть</string>
+    <string name="music_pause">Пауза</string>
+    <string name="music_next">Следующий трек</string>
+    <string name="music_prev">Предыдущий трек</string>
+    <string name="music_stop">Остановить</string>
+    <string name="music_playing">Играет</string>
+    <string name="music_unknown">Неизвестно</string>
+    <string name="music_various">Разные исполнители</string>
+    <string name="music_channel">Музыка</string>
+    <plurals name="music_n_tracks">
+        <item quantity="one">%d трек</item>
+        <item quantity="few">%d трека</item>
+        <item quantity="many">%d треков</item>
+        <item quantity="other">%d трека</item>
+    </plurals>
+    <plurals name="music_n_albums">
+        <item quantity="one">%d альбом</item>
+        <item quantity="few">%d альбома</item>
+        <item quantity="many">%d альбомов</item>
+        <item quantity="other">%d альбома</item>
+    </plurals>
+    <plurals name="music_n_artists">
+        <item quantity="one">%d исполнитель</item>
+        <item quantity="few">%d исполнителя</item>
+        <item quantity="many">%d исполнителей</item>
+        <item quantity="other">%d исполнителя</item>
+    </plurals>
 </resources>

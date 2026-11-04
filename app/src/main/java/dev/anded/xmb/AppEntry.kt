@@ -17,6 +17,10 @@ class AppEntry(
     val subtitle: String? = null,
     /** Ярлык приложения (чат, действие); subtitle тогда — название приложения. */
     val shortcut: ShortcutInfo? = null,
+    /** Папка: пункт открывает вложенный список (альбом → треки), список строится при входе. */
+    val children: (() -> List<AppEntry>)? = null,
+    /** Своё действие вместо запуска приложения: трек, кнопка проигрывателя. */
+    val action: (() -> Unit)? = null,
 ) {
     @Volatile var icon: Bitmap? = null
 

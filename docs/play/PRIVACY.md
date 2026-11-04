@@ -15,6 +15,8 @@ _Last updated: [DATE]_
   Notification contents are not read or stored.
 - **Calendar (optional)** — only if you grant calendar access. The app reads the title and time of your next event
   within 24 hours to show it in the «Now» card. Nothing is stored.
+- **Music files (optional)** — only if you turn on media sections and grant access to music. The app reads the
+  title, artist, album and cover of audio files on the device to list and play them. Nothing is stored.
 
 All of this stays on the device. The app does not collect, transmit, sell or share any personal data, has no ads,
 no analytics and no third-party SDKs. Uninstalling the app deletes everything it stored.
@@ -25,6 +27,9 @@ no analytics and no third-party SDKs. Uninstalling the app deletes everything it
 - Notification access — badges and «Now playing» (optional, granted by you in system settings).
 - `REQUEST_DELETE_PACKAGES` — the «Uninstall» item in an app's menu opens the system uninstall dialog.
 - `VIBRATE` — haptic feedback.
+- `READ_MEDIA_AUDIO` — the built-in music player in the «Music» section (optional, asked when you open it).
+- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `WAKE_LOCK` — music keeps playing with the screen off
+  and is controlled from the notification, lock screen and headphones.
 
 ## Contact
 
@@ -49,6 +54,8 @@ _Обновлено: [ДАТА]_
   Текст уведомлений не читается и не хранится.
 - **Календарь (по желанию)** — только если вы выдали доступ. Читаются название и время ближайшего события
   на сутки вперёд для карточки «Сейчас». Ничего не сохраняется.
+- **Музыка (по желанию)** — только если включены медиаразделы и вы дали доступ к музыке. Читаются название,
+  исполнитель, альбом и обложка аудиофайлов на устройстве, чтобы показать и проиграть их. Ничего не сохраняется.
 
 Всё это остаётся на устройстве. Приложение не собирает, не передаёт, не продаёт и никому не отдаёт персональные
 данные; в нём нет рекламы, аналитики и сторонних SDK. При удалении приложения удаляется всё, что оно сохранило.
@@ -59,6 +66,9 @@ _Обновлено: [ДАТА]_
 - Доступ к уведомлениям — значки и «Сейчас играет» (по желанию, выдаётся вами в настройках системы).
 - `REQUEST_DELETE_PACKAGES` — пункт «Удалить» в меню приложения открывает системный диалог удаления.
 - `VIBRATE` — отклик вибромотора.
+- `READ_MEDIA_AUDIO` — свой проигрыватель в разделе «Музыка» (по желанию, спрашивается при открытии).
+- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `WAKE_LOCK` — музыка играет при выключенном экране,
+  управляется из уведомления, с экрана блокировки и с наушников.
 
 ## Контакты
 
