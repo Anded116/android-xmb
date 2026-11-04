@@ -1,0 +1,155 @@
+<title>XMB Launcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;500;700&display=swap">
+<style>
+  /* Single dark XMB look by choice: wave canvas behind one centered column — pitch, CTA, steps, facts. */
+  :root {
+    --sky-top: #0a2150; --sky-bottom: #1d56b0; --glow: rgba(140, 190, 255, .35);
+    --fg: #f2f6ff; --muted: rgba(225, 235, 255, .72); --line: rgba(255, 255, 255, .16);
+    --cta: #ffffff; --cta-fg: #0d2a66; --bad: #ffb4a8;
+    --font: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html { background: var(--sky-top); }
+  body { margin: 0; min-height: 100vh; color: var(--fg); font: 300 17px/1.6 var(--font);
+         background: radial-gradient(120% 70% at 15% 0%, var(--glow), transparent 60%), linear-gradient(170deg, var(--sky-top), var(--sky-bottom)); }
+  #waves { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  main { position: relative; max-width: 30rem; margin: 0 auto; display: grid; gap: 28px;
+         padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); padding-block: 9vh 48px; }
+
+  .xmb { display: flex; gap: 22px; font-size: .78rem; letter-spacing: .06em; color: var(--muted); overflow: hidden; white-space: nowrap; }
+  .xmb b { color: var(--fg); font-weight: 500; text-shadow: 0 0 12px rgba(255, 255, 255, .8); }
+  h1 { margin: 0; font-weight: 700; font-size: clamp(2.2rem, 9vw, 3rem); line-height: 1.1; text-wrap: balance; letter-spacing: -.01em; }
+  .pitch { margin: 10px 0 0; font-size: 1.1rem; color: var(--muted); text-wrap: balance; }
+
+  .cta { display: grid; gap: 10px; }
+  button { font: 700 1.1rem var(--font); padding: 18px 20px; border: 0; border-radius: 14px; cursor: pointer;
+           background: var(--cta); color: var(--cta-fg); box-shadow: 0 10px 30px rgba(0, 10, 40, .35), 0 0 0 1px rgba(255, 255, 255, .6) inset;
+           transition: transform .15s ease, box-shadow .15s ease; }
+  button:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(0, 10, 40, .45); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+  .meta { margin: 0; font-size: .85rem; color: var(--muted); text-align: center; }
+  #status { margin: 0; font-size: .95rem; text-align: center; }
+  #status.bad { color: var(--bad); }
+
+  h2 { margin: 0 0 10px; font-size: .8rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  ol { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+  ol li { counter-increment: step; display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; }
+  ol li::before { content: counter(step); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+                  border: 1px solid var(--line); font-weight: 500; font-size: .9rem; }
+  ol li span { min-width: 0; padding-top: 2px; }
+  strong { font-weight: 500; }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 1px; background: var(--line); border-radius: 14px; overflow: hidden; }
+  .facts div { background: rgba(10, 30, 75, .55); padding: 14px 16px; display: grid; gap: 2px; }
+  .facts b { font-weight: 500; }
+  .facts small { color: var(--muted); font-size: .8rem; line-height: 1.4; }
+  footer { font-size: .85rem; color: var(--muted); }
+  footer a { color: var(--fg); }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+</style>
+
+<canvas id="waves" aria-hidden="true"></canvas>
+<main>
+  <div class="xmb" aria-hidden="true"><span>Settings</span><b>Apps</b><span>Games</span><span>Music</span><span>Video</span><span>Network</span></div>
+
+  <header>
+    <h1>Your phone, as a PS3.</h1>
+    <p class="pitch">XMB Launcher turns your home screen into the PlayStation 3 menu: categories across, apps down, the slow glowing wave behind it all.</p>
+  </header>
+
+  <section class="cta">
+    <button id="get" hidden>Download for Android</button>
+    <p id="status">Unlocking…</p>
+    <p class="meta" id="file"></p>
+  </section>
+
+  <section>
+    <h2>Install in a minute</h2>
+    <ol>
+      <li><span>Tap <strong>Download for Android</strong> and save the zip.</span></li>
+      <li><span>Open the zip in Files and tap <strong>app-release.apk</strong>.</span></li>
+      <li><span>If Android asks, allow installs from this app, then tap <strong>Install</strong>.</span></li>
+      <li><span>Press Home, pick <strong>XMB</strong> and choose <strong>Always</strong>.</span></li>
+    </ol>
+  </section>
+
+  <section class="facts">
+    <div><b>No internet</b><small>The app has no network permission at all.</small></div>
+    <div><b>Open source</b><small>Every line is on GitHub.</small></div>
+    <div><b>120 Hz smooth</b><small>One view, GPU wave shader, no frame drops.</small></div>
+    <div><b>Easy to undo</b><small>Switch the default home app back any time.</small></div>
+  </section>
+
+  <footer>Source: <a href="https://github.com/Anded116/android-xmb" target="_blank" rel="noopener">github.com/Anded116/android-xmb</a>. Search apps by name, long-press for app info or uninstall. Tuned for Nothing Phone (3a), works on any Android 13+.</footer>
+</main>
+
+<script>
+// The file below is AES-256-GCM encrypted; the key travels only in the link after '#'.
+const NAME = __NAME__, SIZE_KB = __SIZE__;
+const SEALED = "__DATA__";
+
+const $ = function (id) { return document.getElementById(id); };
+$('file').textContent = SIZE_KB + ' KB · Android 13 or newer · free';
+
+function fail(msg) { $('status').textContent = msg; $('status').className = 'bad'; }
+
+async function unlock() {
+  const k = location.hash.slice(1).replace(/-/g, '+').replace(/_/g, '/');
+  if (!k) return fail('This page needs its full link. Ask the sender for the link including the part after #.');
+  const raw = Uint8Array.from(atob(SEALED), function (c) { return c.charCodeAt(0); });
+  const key = await crypto.subtle.importKey('raw', Uint8Array.from(atob(k), function (c) { return c.charCodeAt(0); }), 'AES-GCM', false, ['decrypt']);
+  return new Blob([await crypto.subtle.decrypt({ name: 'AES-GCM', iv: raw.subarray(0, 12) }, key, raw.subarray(12))]);
+}
+
+unlock().then(async function (blob) {
+  if (!blob) return;
+  // Inside a claude.ai artifact plain downloads are blocked: save through the viewer instead.
+  const dl = window.claude ? await window.claude.use('downloads') : null;
+  $('status').textContent = '';
+  $('get').hidden = false;
+  $('get').onclick = function () {
+    if (dl) {
+      dl.save({ filename: NAME, data: blob }).then(function () {
+        $('status').textContent = 'Saved. Now open the zip and tap the APK.';
+      }, function (e) {
+        if (e.code !== 'declined') fail('Could not save: ' + e.message);
+      });
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = NAME;
+      a.click();
+      $('status').textContent = 'Downloading. Then open the zip and tap the APK.';
+    }
+  };
+}, function () { fail('This link is incomplete. Copy the whole link, including everything after #.'); });
+
+// PS3-style wave: thin lines in two layers drifting slowly.
+(function () {
+  const c = $('waves'), g = c.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size() { const d = devicePixelRatio || 1; c.width = innerWidth * d; c.height = innerHeight * d; g.setTransform(d, 0, 0, d, 0, 0); }
+  function draw(t) {
+    const w = innerWidth, h = innerHeight;
+    g.clearRect(0, 0, w, h);
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 7; i++) {
+      const layer = i < 4 ? 0 : 1, ph = t * (layer ? .00021 : .00013) + i * .55;
+      g.beginPath();
+      for (let x = 0; x <= w; x += 8) {
+        const u = x / w;
+        const y = h * (.62 + layer * .06) + Math.sin(u * 2.4 + ph) * h * .07 + Math.sin(u * 5.1 - ph * 1.7 + i) * h * .02;
+        x ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.strokeStyle = 'rgba(200, 225, 255, ' + (layer ? .10 : .16) + ')';
+      g.lineWidth = layer ? 1 : 1.4;
+      g.stroke();
+    }
+    if (!still) requestAnimationFrame(draw);
+  }
+  size(); addEventListener('resize', size);
+  requestAnimationFrame(draw);
+})();
+</script>

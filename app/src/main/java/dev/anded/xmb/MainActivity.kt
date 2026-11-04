@@ -7,6 +7,7 @@ import android.app.WallpaperManager
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -62,6 +63,8 @@ class MainActivity : Activity() {
         fastModeId = findFastMode()
 
         XmbSettings.init(this)
+        // Приставка — альбомный XMB по датчику; телефон — как велит система.
+        if (XmbSettings.console) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         AppHistory.init(this)
 
         val ui = uiContext()
@@ -291,9 +294,16 @@ class MainActivity : Activity() {
         } else if (viewer.open) {
             if (viewer.onKey(event)) return true
         } else if (search.open) {
-            if (event.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
-                if (event.action == KeyEvent.ACTION_DOWN) toggleSearch()
-                return true
+            // Геймпад в поиске: X/Select — закрыть (как и открыли), A — первый результат; B — системный «назад».
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_SELECT -> {
+                    if (event.action == KeyEvent.ACTION_DOWN) toggleSearch()
+                    return true
+                }
+                KeyEvent.KEYCODE_BUTTON_A -> {
+                    if (event.action == KeyEvent.ACTION_DOWN) search.launchFirst()
+                    return true
+                }
             }
         } else if (xmb.onKey(event)) {
             return true

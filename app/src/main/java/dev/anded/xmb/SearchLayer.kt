@@ -133,7 +133,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
                 }
             })
             setOnEditorActionListener { _, _, _ ->
-                (icons.firstOrNull() ?: rows.firstOrNull())?.let { launch(it, cellRect(0)) }
+                launchFirst()
                 true
             }
             setOnFocusChangeListener { _, has -> if (has) unfreeze() }
@@ -169,6 +169,11 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         topInset = bars.top
         placeField()
         invalidate()
+    }
+
+    /** Первый результат: «Ввод» на клавиатуре, A на геймпаде. */
+    fun launchFirst() {
+        (icons.firstOrNull() ?: rows.firstOrNull())?.let { launch(it, cellRect(0)) }
     }
 
     fun show() {

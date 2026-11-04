@@ -2,7 +2,9 @@ package dev.anded.xmb
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
 import android.view.InputDevice
+import android.view.Surface
 import android.content.SharedPreferences
 
 /** Оформление: тема, фон, значки. Общие для лаунчера и живых обоев — они в одном процессе. */
@@ -33,8 +35,14 @@ object XmbSettings {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences("xmb", Context.MODE_PRIVATE)
-        mediaDefault = handheld(context)
+        console = console(context)
+        val tv = (context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
+        mediaDefault = console || tv
     }
+
+    /** Игровая приставка (Retroid Pocket и т. п., PR #1): альбомный XMB по датчику, медиаразделы по умолчанию. */
+    var console = false
+        private set
 
     /** Медиаразделы (Фото, Музыка, Видео вместо Развлечений); по умолчанию — на приставках и ТВ (LNC-A0008). */
     var media: Boolean
@@ -51,14 +59,22 @@ object XmbSettings {
         set(v) = prefs.edit().putStringSet("library", v).apply()
     val LIBRARY = setOf("photo", "music", "video")
 
-    /** Приставка — встроенный (не подключённый) геймпад; ТВ — по режиму интерфейса. */
-    private fun handheld(context: Context): Boolean {
-        val ui = context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
-        if (ui == Configuration.UI_MODE_TYPE_TELEVISION) return true
-        return InputDevice.getDeviceIds().any { id ->
+    /**
+     * Приставка: производитель Retroid, встроенный (не подключённый) геймпад или экран, «от природы» альбомный.
+     * Последний признак — только у небольших экранов: у планшетов альбомная ориентация тоже бывает родной.
+     */
+    private fun console(context: Context): Boolean {
+        if (Build.MANUFACTURER.contains("retroid", ignoreCase = true) || Build.BRAND.contains("retroid", ignoreCase = true)) return true
+        val pad = InputDevice.getDeviceIds().any { id ->
             val d = InputDevice.getDevice(id)
             d != null && !d.isExternal && d.supportsSource(InputDevice.SOURCE_GAMEPAD)
         }
+        if (pad) return true
+        val config = context.resources.configuration
+        if (config.smallestScreenWidthDp >= 600) return false
+        val r = runCatching { context.display?.rotation }.getOrNull() ?: Surface.ROTATION_0
+        val turned = r == Surface.ROTATION_90 || r == Surface.ROTATION_270
+        return (config.orientation == Configuration.ORIENTATION_LANDSCAPE) != turned
     }
 
     /** Оформление; читается на каждый кадр (тень текста), поэтому держится в поле. */

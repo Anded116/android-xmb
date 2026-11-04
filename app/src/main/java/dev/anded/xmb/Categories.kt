@@ -106,7 +106,7 @@ object Categories {
             "mupen64", "flycast", "redream", "lemuroid", "daijisho", "org.es_de", "pegasus", "beacon", "winlator",
             "gamehub", "gamenative", "mobox", "vita3k", "azahar", "lime3ds", "mgba", "snes9x", "fpse", "epsxe",
             "valvesoftware", "epicgames", "com.playstation", "com.microsoft.xcloud", "xbox", "nvidia.geforcenow",
-            "moonlight", "steamlink", "rpcs3", "com.game", ".game", "games",
+            "moonlight", "steamlink", "rpcs3", "citron", "limelight", "emulator", "_emu", "com.game", ".game", "games",
         ),
         "chat" to listOf(
             "org.telegram", "org.thunderdog.challegram", "com.whatsapp", "com.viber", "org.thoughtcrime.securesms",

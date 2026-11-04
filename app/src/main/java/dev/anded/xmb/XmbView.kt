@@ -1603,10 +1603,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     // ---------- клавиши: геймпад, крестовина, клавиатура ----------
 
     /**
-     * ←→ — разделы, ↑↓ — пункты, A/Enter — запуск выбранного, X/Menu — его меню, Y — поиск, L1/R1 — на страницу,
-     * L2/R2 — в начало и конец, Start — «Настройки», Select — подсказки. B не перехватывается: необработанную
-     * B система сама превращает в «назад», а «назад» закрывает меню, поиск и подсказки. Стик система тоже
-     * сама переводит в крестовину. true — клавиша наша.
+     * Раскладка владельца приставки (PR #1, LNC-A0029), как на PS3: ←→ — разделы, ↑↓ — пункты, A/Enter — запуск,
+     * Y/Start/Menu — меню пункта, X/Select — поиск, L1/R1 — на страницу, L2/R2 — в начало и конец. B не
+     * перехватывается: необработанную B система сама превращает в «назад», а «назад» закрывает меню, поиск и
+     * подсказки. Стик система тоже сама переводит в крестовину. true — клавиша наша.
      */
     fun onKey(e: KeyEvent): Boolean {
         val code = e.keyCode
@@ -1637,13 +1637,11 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_PAGE_DOWN -> posTarget[c] = (posTarget[c] + PAGE).coerceIn(0, last)
             KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_MOVE_HOME -> posTarget[c] = 0
             KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_MOVE_END -> posTarget[c] = last
-            KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_MENU -> selected()?.let { entry ->
+            KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> selected()?.let { entry ->
                 val items = onMenu(entry)
                 if (items.isNotEmpty()) showMenu(entry.label, items)
             }
-            KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_SEARCH -> onSearch()
-            KeyEvent.KEYCODE_BUTTON_START -> sections.indexOfFirst { it.id == Categories.SETTINGS_ID }.takeIf { it >= 0 }?.let(::setCategory)
-            KeyEvent.KEYCODE_BUTTON_SELECT -> showHints()
+            KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_SEARCH -> onSearch()
             else -> selected()?.let { launchAt(it, posTarget[c] - pos[c]) }
         }
         return true
@@ -1656,7 +1654,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         when (code) {
             KeyEvent.KEYCODE_DPAD_UP -> menuSel = if (menuSel <= 0) n - 1 else menuSel - 1
             KeyEvent.KEYCODE_DPAD_DOWN -> menuSel = if (menuSel >= n - 1) 0 else menuSel + 1
-            KeyEvent.KEYCODE_DPAD_LEFT -> closeMenu()
+            // Та же кнопка, что открыла меню, его и закрывает.
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> closeMenu()
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_A -> {
                 val item = menuItems.getOrNull(menuSel) ?: return true
                 performHapticFeedback(Haptics.TAP)
