@@ -9,14 +9,14 @@
 | Статус | Тикетов |
 |---|---|
 | `open` | 5 |
-| `fixed` | 13 |
-| `accepted` | 10 |
-| **всего** | **28** |
+| `fixed` | 14 |
+| `accepted` | 11 |
+| **всего** | **30** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
 | ui | 0 | 0 | 1 |
-| input | 1 | 0 | 0 |
+| input | 1 | 0 | 1 |
 | media | 2 | 0 | 10 |
 | system | 0 | 0 | 1 |
 | store | 2 | 0 | 1 |
@@ -52,6 +52,7 @@
 
 | ID | Принято | Статус | Область | Решение |
 |---|---|---|---|---|
+| [LNC-A0029](LNC-A0029-raskladka-knopok-geympada-kak-v-pr-vladeltsa.md) | 2026-11-04 | accepted | input | Раскладка кнопок геймпада — как в PR владельца приставки |
 | [LNC-A0027](LNC-A0027-s-pleera-na-telefon-izbrannoe-4-5-zvezd-i.md) | 2026-11-04 | accepted | media | С плеера на телефон — избранное, 4–5 звёзд и слушанное 2+ раза |
 | [LNC-A0019](LNC-A0019-foto-i-video-v-store-cherez-sistemnyy-vybor.md) | 2026-11-04 | accepted | store | Фото и видео в store — через системный выбор |
 | [LNC-A0008](LNC-A0008-foto-muzyka-i-video-kak-na-psp-optsiey.md) | 2026-11-04 | accepted | media | Фото, музыка и видео как на PSP — опцией |
