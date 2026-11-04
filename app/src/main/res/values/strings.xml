@@ -69,6 +69,8 @@
     <string name="set_media">Media sections</string>
     <string name="media_on">Photo, Music and Video instead of Entertainment</string>
     <string name="media_off">Off</string>
+    <string name="set_library">Device media</string>
+    <string name="library_off">Off — apps only</string>
     <string name="media_show">Photo, Music, Video</string>
     <string name="media_hide">Turn off</string>
     <string name="set_dock">Dock</string>

@@ -169,7 +169,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         val collator = Collator.getInstance(Locale.forLanguageTag("ru"))
         for (list in cols) list.sortWith { a, b -> collator.compare(a.label, b.label) }
         cols[Categories.SETTINGS].addAll(0, specials())
-        if (media) for (id in MEDIA) cols[Categories.indexOf(id)].addAll(0, extras(id))
+        if (media) for (id in XmbSettings.library) cols[Categories.indexOf(id)].addAll(0, extras(id))
         return cols
     }
 
@@ -306,6 +306,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             special("freeze", R.string.set_freeze, Glyph.WAVE, str(if (XmbSettings.freezeBg) R.string.freeze_on else R.string.freeze_always)),
             special("status", R.string.set_status, Glyph.STATUS, res.getStringArray(R.array.status_names)[XmbSettings.statusBar]),
             special("media", R.string.set_media, Glyph.MUSIC, str(if (XmbSettings.media) R.string.media_on else R.string.media_off)),
+            if (XmbSettings.media) special("library", R.string.set_library, Glyph.TRACKS, libraryName()) else null,
             special("dock", R.string.set_dock, Glyph.GRID, str(if (XmbSettings.dock) R.string.dock_on else R.string.dock_off)),
             special("order", R.string.set_order, Glyph.GRID, str(if (XmbSettings.sortByUsage) R.string.order_usage else R.string.order_abc)),
             special("icons", R.string.set_icons, Glyph.ICONS, iconName),
@@ -323,6 +324,12 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
     }
 
     private fun str(id: Int): String = context.getString(id)
+
+    /** «Фото, Музыка» — отмеченные разделы своей медиатеки по порядку ряда; ни одного — «Выключена». */
+    private fun libraryName(): String {
+        val on = Categories.all.filter { it.id in XmbSettings.library }.map { str(it.title) }
+        return if (on.isEmpty()) str(R.string.library_off) else on.joinToString(", ")
+    }
 
     private fun special(id: String, label: Int, glyph: Glyph, subtitle: String): AppEntry {
         val key = "special:$id"
@@ -453,7 +460,6 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         const val ICON_DP = 52
         private const val MENU_SHORTCUTS = 5
         const val DOCK_SIZE = 5
-        private val MEDIA = listOf("photo", "music", "video")
         private const val PREF_DOCK = "dock"
 
         fun noticesEnabled(context: Context): Boolean {

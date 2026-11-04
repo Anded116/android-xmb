@@ -42,6 +42,15 @@ object XmbSettings {
         set(v) = prefs.edit().putBoolean("media", v).apply()
     private var mediaDefault = false
 
+    /**
+     * Свои пункты медиаразделов (LNC-A0028): в каких из photo, music, video показывать медиатеку устройства —
+     * папки, плейлисты, «Перемешать всё». Не отмеченный раздел — одни приложения.
+     */
+    var library: Set<String>
+        get() = prefs.getStringSet("library", null) ?: LIBRARY
+        set(v) = prefs.edit().putStringSet("library", v).apply()
+    val LIBRARY = setOf("photo", "music", "video")
+
     /** Приставка — встроенный (не подключённый) геймпад; ТВ — по режиму интерфейса. */
     private fun handheld(context: Context): Boolean {
         val ui = context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK

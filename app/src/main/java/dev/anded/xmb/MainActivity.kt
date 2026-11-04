@@ -408,6 +408,7 @@ class MainActivity : Activity() {
             "freeze" -> freezeMenu()
             "dock" -> dockMenu()
             "media" -> mediaMenu()
+            "library" -> libraryMenu()
             "status" -> statusMenu()
             "notices" -> open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             "calendar" -> if (NextEvent.granted(this)) refreshCalendar() else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 1)
@@ -537,6 +538,19 @@ class MainActivity : Activity() {
             }
         }
         xmb.showMenu(getString(R.string.set_media), items)
+    }
+
+    /** Своя медиатека — отдельно для Фото, Музыки и Видео; меню не закрывается, отметки переключаются. */
+    private fun libraryMenu() {
+        val items = Categories.all.filter { it.media == true }.map { c ->
+            val on = c.id in XmbSettings.library
+            XmbView.MenuItem(getString(c.title), checked = on, keepOpen = true) {
+                XmbSettings.library = if (on) XmbSettings.library - c.id else XmbSettings.library + c.id
+                libraryMenu()
+                repo.reload()
+            }
+        }
+        xmb.showMenu(getString(R.string.set_library), items)
     }
 
     private fun dockMenu() {

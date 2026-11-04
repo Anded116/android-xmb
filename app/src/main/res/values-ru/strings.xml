@@ -66,6 +66,8 @@
     </string-array>
     <string name="set_media">Медиаразделы</string>
     <string name="media_on">Фото, Музыка и Видео вместо «Развлечений»</string>
+    <string name="set_library">Медиатека устройства</string>
+    <string name="library_off">Выключена — только приложения</string>
     <string name="media_off">Выключены</string>
     <string name="media_show">Фото, Музыка, Видео</string>
     <string name="media_hide">Выключить</string>
