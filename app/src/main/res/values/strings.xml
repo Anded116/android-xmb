@@ -186,6 +186,9 @@
     <string name="gallery_none_sub">Shots and clips will show up here</string>
     <string name="photo_all">All photos</string>
     <string name="video_all">All videos</string>
+    <string name="photo_pick">Pick photos</string>
+    <string name="video_pick">Pick a video</string>
+    <string name="pick_sub">Opens the system picker</string>
     <string name="video_no_player">No app to play this video</string>
     <plurals name="photo_n">
         <item quantity="one">%d photo</item>

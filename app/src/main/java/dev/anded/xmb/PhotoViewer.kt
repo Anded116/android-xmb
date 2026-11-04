@@ -323,7 +323,8 @@ class PhotoViewer(context: Context) : View(context) {
         if (!caption || drop != 0f) return
         val top = (rootWindowInsets?.getInsets(WindowInsets.Type.systemBars())?.top ?: 0) + 28 * dp
         textPaint.fade((255 * shown).roundToInt())
-        canvas.drawText("${index + 1} / ${shots.size}   ${dateFormat.format(Date(shot.date))}", 20 * dp, top, textPaint)
+        val date = if (shot.date > 0) "   " + dateFormat.format(Date(shot.date)) else ""
+        canvas.drawText("${index + 1} / ${shots.size}$date", 20 * dp, top, textPaint)
     }
 
     private companion object {

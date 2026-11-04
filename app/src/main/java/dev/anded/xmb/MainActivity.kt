@@ -15,6 +15,7 @@ import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.provider.Settings
 import android.content.Context
 import android.view.ContextThemeWrapper
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var photos: Gallery
     private lateinit var videos: Gallery
     private lateinit var viewer: PhotoViewer
+    private lateinit var player: VideoPlayer
     private lateinit var launcherApps: LauncherApps
     private var fastModeId = 0
     // Лаунчер уходил с экрана (onStop) и ещё не вернулся (onResume). Пауза — не признак: перед onNewIntent Android
@@ -74,9 +76,10 @@ class MainActivity : Activity() {
             if (openNow && xmb.openFolder("music", MusicLibrary.NOW)) openNow = false
         }
         music = MusicLibrary(ui, iconPx, onArt = { xmb.postInvalidate() }, onAsk = ::askAudio)
-        photos = Gallery(ui, iconPx, video = false, onAsk = ::askGallery) { list, i -> viewer.show(list, i) }
-        videos = Gallery(ui, iconPx, video = true, onAsk = ::askGallery) { list, i -> play(list[i]) }
+        photos = Gallery(ui, iconPx, video = false, onAsk = ::askGallery, onPick = { pick(video = false) }) { list, i -> viewer.show(list, i) }
+        videos = Gallery(ui, iconPx, video = true, onAsk = ::askGallery, onPick = { pick(video = true) }) { list, i -> play(list[i]) }
         viewer = PhotoViewer(ui)
+        player = VideoPlayer(ui)
         repo.extras = { id ->
             when (id) {
                 "music" -> music.roots()
@@ -110,6 +113,7 @@ class MainActivity : Activity() {
         setContentView(FrameLayout(this).apply {
             addView(xmb)
             addView(viewer)
+            addView(player)
             addView(search)
         })
         repo.start()
@@ -228,6 +232,7 @@ class MainActivity : Activity() {
         searchFrom = null
         // Не на паузе: перед onNewIntent (повторное нажатие кнопки) Android ставит на паузу и видимую активность.
         search.hideNow()
+        player.close()
     }
 
     override fun onDestroy() {
@@ -240,6 +245,7 @@ class MainActivity : Activity() {
         super.onNewIntent(intent)
         xmb.closeMenu()
         viewer.close()
+        player.close()
         // «Домой» на самом лаунчере — из вложенного списка к колонке раздела.
         if (!wasStopped) xmb.closeLevels()
         handleKey(intent)
@@ -250,6 +256,7 @@ class MainActivity : Activity() {
     private val back = OnBackInvokedCallback {
         when {
             search.open -> closeSearch()
+            player.open -> player.close()
             viewer.open -> viewer.close()
             !xmb.closeHints() && !xmb.closeMenu() -> xmb.back()
         }
@@ -274,7 +281,9 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (viewer.open) {
+        if (player.open) {
+            if (player.onKey(event)) return true
+        } else if (viewer.open) {
             if (viewer.onKey(event)) return true
         } else if (search.open) {
             if (event.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
@@ -317,6 +326,13 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_HOME) repo.reload()
+        if ((requestCode == REQ_PICK_PHOTO || requestCode == REQ_PICK_VIDEO) && resultCode == RESULT_OK && data != null) {
+            val clip = data.clipData
+            val uris = if (clip != null) List(clip.itemCount) { clip.getItemAt(it).uri } else listOfNotNull(data.data)
+            val shots = uris.map { Gallery.picked(this, it) }
+            if (shots.isEmpty()) return
+            if (requestCode == REQ_PICK_PHOTO) viewer.show(shots, 0) else player.show(shots[0].uri)
+        }
     }
 
     /** Уровень «Сейчас играет» и пункт в колонке следят за проигрывателем; колонка пересобирается при смене трека. */
@@ -338,6 +354,13 @@ class MainActivity : Activity() {
     /** Фото и видео — одним системным вопросом. */
     private fun askGallery() {
         requestPermissions(Gallery.PERMISSIONS, REQ_GALLERY)
+    }
+
+    /** Store: системный выбор без разрешений — фото пачкой в свой просмотр, ролик — в свой плеер. */
+    private fun pick(video: Boolean) {
+        val intent = Intent(MediaStore.ACTION_PICK_IMAGES).setType(if (video) "video/*" else "image/*")
+        if (!video) intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit())
+        runCatching { startActivityForResult(intent, if (video) REQ_PICK_VIDEO else REQ_PICK_PHOTO) }
     }
 
     /** Ролик — системным плеером или тем, что пользователь выбрал для видео. */
@@ -636,6 +659,8 @@ class MainActivity : Activity() {
         private const val REQ_HOME = 2
         private const val REQ_AUDIO = 3
         private const val REQ_GALLERY = 4
+        private const val REQ_PICK_PHOTO = 5
+        private const val REQ_PICK_VIDEO = 6
         const val EXTRA_KEY = "dev.anded.xmb.KEY"
         const val KEY_SEARCH = "search"
         const val KEY_MUSIC = "music"

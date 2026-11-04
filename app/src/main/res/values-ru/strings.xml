@@ -190,6 +190,9 @@
     <string name="gallery_none_sub">Здесь появятся снимки и ролики</string>
     <string name="photo_all">Все фото</string>
     <string name="video_all">Все видео</string>
+    <string name="photo_pick">Выбрать фото</string>
+    <string name="video_pick">Выбрать видео</string>
+    <string name="pick_sub">Откроется системный выбор</string>
     <string name="video_no_player">Нет приложения, чтобы открыть видео</string>
     <plurals name="photo_n">
         <item quantity="one">%d фото</item>

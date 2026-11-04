@@ -21,7 +21,8 @@ class Shot(val uri: Uri, val name: String, val bucketId: Long, val bucket: Strin
 /**
  * Фото и видео на устройстве в разделах «Фото» и «Видео» (LNC-A0012, LNC-A0013): «Все фото» и папки, как их
  * раскладывает система (Камера, Скриншоты, …), свежие сверху. Фото открываются своим просмотром, видео — системным
- * плеером. Только в сборке full (Edition.GALLERY): Play пускает READ_MEDIA_IMAGES/VIDEO только галереям.
+ * плеером. Папки — только в сборке full (Edition.GALLERY): Play пускает READ_MEDIA_IMAGES/VIDEO только галереям;
+ * в store один пункт открывает системный выбор (Photo Picker) — без разрешений (LNC-A0019).
  * roots() зовётся из потока сборки списка, остальное — из главного.
  */
 class Gallery(
@@ -29,6 +30,7 @@ class Gallery(
     private val iconPx: Int,
     private val video: Boolean,
     private val onAsk: () -> Unit,
+    private val onPick: () -> Unit,
     private val onOpen: (List<Shot>, Int) -> Unit,
 ) {
     private val glyph = if (video) Glyph.VIDEO else Glyph.PHOTO
@@ -36,7 +38,9 @@ class Gallery(
     private val dateFormat = SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(), "d MMMM yyyy HH:mm"), Locale.getDefault())
 
     fun roots(): List<AppEntry> {
-        if (!Edition.GALLERY) return emptyList()
+        if (!Edition.GALLERY) {
+            return listOf(item("$kind:pick", str(if (video) R.string.video_pick else R.string.photo_pick), str(R.string.pick_sub), onPick))
+        }
         if (!granted(context)) {
             val label = str(if (video) R.string.video_library else R.string.photo_library)
             return listOf(item("$kind:ask", label, str(R.string.gallery_allow), onAsk))
@@ -113,5 +117,23 @@ class Gallery(
 
         fun granted(context: Context): Boolean =
             PERMISSIONS.all { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+
+        /** Снимок, выбранный в системном выборе: у таких адресов свои колонки, поэтому — по имени, что найдётся. */
+        fun picked(context: Context, uri: Uri): Shot {
+            var name = ""
+            var date = 0L
+            var duration = 0L
+            runCatching {
+                context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                    if (!c.moveToFirst()) return@use
+                    fun col(n: String) = c.getColumnIndex(n).takeIf { it >= 0 && !c.isNull(it) }
+                    col(MediaStore.MediaColumns.DISPLAY_NAME)?.let { name = c.getString(it) }
+                    col(MediaStore.MediaColumns.DATE_TAKEN)?.let { date = c.getLong(it) }
+                    (col(MediaStore.PickerMediaColumns.DURATION_MILLIS) ?: col(MediaStore.MediaColumns.DURATION))?.let { duration = c.getLong(it) }
+                }
+            }
+            val mime = context.contentResolver.getType(uri) ?: "*/*"
+            return Shot(uri, name, 0L, "", date, duration, mime)
+        }
     }
 }

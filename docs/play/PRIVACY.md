@@ -17,6 +17,8 @@ _Last updated: [DATE]_
   within 24 hours to show it in the «Now» card. Nothing is stored.
 - **Music files (optional)** — only if you turn on media sections and grant access to music. The app reads the
   title, artist, album and cover of audio files on the device to list and play them. Nothing is stored.
+- **Photos and videos you pick** — only the ones you choose in the system picker, to show or play them.
+  Nothing is stored.
 
 All of this stays on the device. The app does not collect, transmit, sell or share any personal data, has no ads,
 no analytics and no third-party SDKs. Uninstalling the app deletes everything it stored.
@@ -56,6 +58,8 @@ _Обновлено: [ДАТА]_
   на сутки вперёд для карточки «Сейчас». Ничего не сохраняется.
 - **Музыка (по желанию)** — только если включены медиаразделы и вы дали доступ к музыке. Читаются название,
   исполнитель, альбом и обложка аудиофайлов на устройстве, чтобы показать и проиграть их. Ничего не сохраняется.
+- **Фото и видео, которые вы выбрали** — только выбранные в системном окне, чтобы показать или проиграть их.
+  Ничего не сохраняется.
 
 Всё это остаётся на устройстве. Приложение не собирает, не передаёт, не продаёт и никому не отдаёт персональные
 данные; в нём нет рекламы, аналитики и сторонних SDK. При удалении приложения удаляется всё, что оно сохранило.
