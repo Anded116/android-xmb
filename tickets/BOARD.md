@@ -9,15 +9,15 @@
 | Статус | Тикетов |
 |---|---|
 | `open` | 5 |
-| `fixed` | 12 |
+| `fixed` | 13 |
 | `accepted` | 10 |
-| **всего** | **27** |
+| **всего** | **28** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
 | ui | 0 | 0 | 1 |
 | input | 1 | 0 | 0 |
-| media | 2 | 0 | 9 |
+| media | 2 | 0 | 10 |
 | system | 0 | 0 | 1 |
 | store | 2 | 0 | 1 |
 
@@ -46,6 +46,7 @@
 - [ ] [LNC-A0022](LNC-A0022-pleylisty-i-izbrannoe-kak-na-pleere.md) `[P2/media]` Плейлисты и «Избранное», как на плеере
 - [ ] [LNC-A0023](LNC-A0023-umnye-spiski-luchshee-4-5-zvezd-i-davno-ne.md) `[P2/media]` Умные списки: «Лучшее: 4–5 звёзд» и «Давно не слушал»
 - [ ] [LNC-A0024](LNC-A0024-ochered-igrat-sleduyuschim-i-v-konets-ocheredi.md) `[P2/media]` Очередь: «Играть следующим» и «В конец очереди»
+- [ ] [LNC-A0028](LNC-A0028-svoi-punkty-foto-muzyki-i-video-optsiey.md) `[P2/media]` Свои пункты Фото, Музыки и Видео — опцией
 
 ## 📐 Решения (decision)
 
