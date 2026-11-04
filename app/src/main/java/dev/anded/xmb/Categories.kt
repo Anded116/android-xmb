@@ -60,6 +60,10 @@ object Categories {
             "musically", "tiktok", "twitch", "reddit", "vkvideo", "rutube", "soundcloud", "valvesoftware", "instagram",
             "pinterest", "twitter", "podcast", "com.google.android.apps.photos", "gallery", "music", "video",
             "player", "game",
+            // Эмуляторы и фронтенды консолей (Retroid Pocket и т. п.).
+            "retroarch", "dolphinemu", "ppsspp", "duckstation", "aethersx2", "yuzu", "sudachi", "citron", "skyline",
+            "citra", "lime3ds", "azahar", "melonds", "drastic", "mupen64", "flycast", "redream", "vita3k", "winlator",
+            "limelight", "es_de", "daijishou", "lemuroid", "mgba", "emulator", "_emu",
         ),
         // Браузеры объявляют себя «социальными» и без этого правила уходят в «Связь».
         "other" to listOf("chrome", "firefox", "mozilla", "browser"),

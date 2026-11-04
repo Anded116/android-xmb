@@ -16,6 +16,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.HapticFeedbackConstants
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
@@ -48,6 +49,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     var onMenu: (AppEntry, Int) -> List<MenuItem> = { _, _ -> emptyList() }
     var onCategory: (Int) -> Unit = {}
     var onBusy: (Boolean) -> Unit = {}
+    var onSearch: () -> Unit = {}
 
     private val metrics = resources.displayMetrics
     private val dp = metrics.density
@@ -101,6 +103,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     private var menuTitle = ""
     private var menuOpen = false
     private var menuT = 0f
+    // Строка меню под курсором геймпада; -1 — меню открыто касанием, подсветки нет.
+    private var menuSel = -1
 
     private var active = false
     private var busy = false
@@ -215,8 +219,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         focusX = w * 0.24f
-        catSpacing = w * 0.22f
-        barY = h * 0.30f
+        // В альбомной (консоли вроде Retroid Pocket) экран широкий и низкий: разделы теснее, ряд выше — как на PS3.
+        val landscape = w > h
+        catSpacing = if (landscape) min(w * 0.22f, 150 * dp) else w * 0.22f
+        barY = h * if (landscape) 0.24f else 0.30f
         selY = barY + 104 * dp
         aboveY = barY - 80 * dp
         textX = focusX + iconPx / 2f + 16 * dp
@@ -418,7 +424,13 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         return width - width * MENU_WIDTH * e
     }
 
-    private fun menuTop() = barY - 4 * dp
+    /** Верх первой строки; с геймпада меню сдвигается вверх, чтобы выбранная строка не уходила за низ (альбомный экран). */
+    private fun menuTop(): Float {
+        val top = barY - 4 * dp
+        if (menuSel < 0) return top
+        val bottom = height - bottomInset - 16 * dp
+        return top - max(0f, top + (menuSel + 1) * menuRowH - bottom)
+    }
 
     private fun drawMenu(canvas: Canvas) {
         dimPaint.alpha = (120 * menuT).toInt()
@@ -433,7 +445,14 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         canvas.drawText(menuTitle, tx, barY - 34 * dp, menuTitlePaint)
         menuItemPaint.alpha = (255 * menuT).toInt()
         val top = menuTop()
+        if (menuSel >= 0) {
+            pressPaint.alpha = (34 * menuT).toInt()
+            dst.set(left + 10 * dp, top + menuSel * menuRowH + 4 * dp, width - 10 * dp, top + (menuSel + 1) * menuRowH - 4 * dp)
+            canvas.drawRoundRect(dst, 12 * dp, 12 * dp, pressPaint)
+        }
         for (i in menuItems.indices) {
+            // Уехавшие вверх строки не рисуем поверх заголовка.
+            if (top + i * menuRowH < barY - 5 * dp) continue
             canvas.drawText(menuItems[i].label, tx, top + i * menuRowH + menuRowH / 2 + menuCenter, menuItemPaint)
         }
     }
@@ -569,25 +588,75 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             }
             return
         }
-        val entry = columns.getOrNull(pressCol)?.getOrNull(pressIndex) ?: return
-        val y = itemY(pressIndex - pos[pressCol]).toInt()
+        launched = columns.getOrNull(pressCol)?.getOrNull(pressIndex) != null
+        launchAt(pressCol, pressIndex)
+    }
+
+    private fun launchAt(col: Int, index: Int): Boolean {
+        val entry = columns.getOrNull(col)?.getOrNull(index) ?: return false
+        val y = itemY(index - pos[col]).toInt()
         val half = iconPx / 2
         launchRect.set(focusX.toInt() - half, y - half, focusX.toInt() + half, y + half)
-        launched = true
         onLaunch(entry, launchRect)
+        return true
     }
 
     private fun openMenuForPress() {
-        val entry = columns.getOrNull(pressCol)?.getOrNull(pressIndex) ?: return
-        val items = onMenu(entry, pressCol)
         drag = Drag.NONE
+        openMenu(pressCol, pressIndex, fromKeys = false)
         pressIndex = -1
+    }
+
+    private fun openMenu(col: Int, index: Int, fromKeys: Boolean) {
+        val entry = columns.getOrNull(col)?.getOrNull(index) ?: return
+        val items = onMenu(entry, col)
         if (items.isEmpty()) return
         performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         menuItems = items
         menuTitle = TextUtils.ellipsize(entry.label, menuTitlePaint, width * MENU_WIDTH - 48 * dp, TextUtils.TruncateAt.END).toString()
+        menuSel = if (fromKeys) 0 else -1
         menuOpen = true
         invalidate()
+    }
+
+    // ---------- кнопки (геймпад консоли, D-pad; стик система сама превращает в D-pad) ----------
+
+    /** Как на PS3: крестовина ходит, A — запуск, B — назад, Y/Start — меню, X/Select — поиск, L1/R1 — страница. */
+    fun onKey(code: Int): Boolean {
+        lastTouch = System.nanoTime()
+        invalidate()
+        if (menuOpen) {
+            when (code) {
+                KeyEvent.KEYCODE_DPAD_UP -> menuSel = max(0, menuSel - 1)
+                KeyEvent.KEYCODE_DPAD_DOWN -> menuSel = min(menuItems.lastIndex, menuSel + 1)
+                KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                    val item = menuItems.getOrNull(menuSel)
+                    closeMenu()
+                    item?.action?.invoke()
+                }
+                KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_BUTTON_START,
+                KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_DPAD_LEFT -> closeMenu()
+                else -> return false
+            }
+            return true
+        }
+        val col = category
+        val last = max(0, columns[col].lastIndex)
+        when (code) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> setCategory(category - 1)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> setCategory(category + 1)
+            KeyEvent.KEYCODE_DPAD_UP -> posTarget[col] = max(0, posTarget[col] - 1)
+            KeyEvent.KEYCODE_DPAD_DOWN -> posTarget[col] = min(last, posTarget[col] + 1)
+            KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_PAGE_UP -> posTarget[col] = max(0, posTarget[col] - PAGE)
+            KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_PAGE_DOWN -> posTarget[col] = min(last, posTarget[col] + PAGE)
+            KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> launchAt(col, posTarget[col])
+            KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> openMenu(col, posTarget[col], fromKeys = true)
+            KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_SEARCH -> onSearch()
+            // На главном экране «назад» некуда — съедаем, чтобы не всплыло системное.
+            KeyEvent.KEYCODE_BUTTON_B -> Unit
+            else -> return false
+        }
+        return true
     }
 
     private fun menuTap(x: Float, y: Float) {
@@ -637,6 +706,7 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         const val SWIPE_VELOCITY = 1.6f
         const val SWIPE_SHARE = 0.3f
         const val RUBBER = 0.3f
+        const val PAGE = 5
         const val ABOVE_ROWS = 4
         const val ABOVE_ALPHA = 0.55f
         const val BELOW_ALPHA = 0.82f

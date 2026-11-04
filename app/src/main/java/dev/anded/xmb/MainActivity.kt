@@ -3,11 +3,18 @@ package dev.anded.xmb
 import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
+import android.content.res.Configuration
 import android.graphics.Rect
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.InputDevice
+import android.view.KeyEvent
+import android.view.Surface
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
 import kotlin.math.roundToInt
@@ -23,6 +30,9 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setDecorFitsSystemWindows(false)
+        // Не консоль — как велит система: телефон с блокировкой поворота остаётся в портрете, с автоповоротом крутится.
+        requestedOrientation = if (isConsole()) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         launcherApps = getSystemService(LauncherApps::class.java)
         fastModeId = findFastMode()
 
@@ -43,6 +53,10 @@ class MainActivity : Activity() {
         xmb.onLaunch = ::launch
         xmb.onMenu = ::menuFor
         xmb.onBusy = ::setFast
+        xmb.onSearch = {
+            search.fallback = repo.columns[xmb.category]
+            search.show()
+        }
         search.onLaunch = ::launch
         setContentView(FrameLayout(this).apply {
             addView(xmb)
@@ -57,8 +71,7 @@ class MainActivity : Activity() {
         when (intent?.getStringExtra(EXTRA_KEY)) {
             KEY_SEARCH -> {
                 xmb.closeMenu()
-                search.fallback = repo.columns[xmb.category]
-                search.show()
+                xmb.onSearch()
             }
             KEY_TAP -> {
                 search.hide()
@@ -92,6 +105,36 @@ class MainActivity : Activity() {
         super.onNewIntent(intent)
         xmb.closeMenu()
         handleKey(intent)
+    }
+
+    /** Кнопки геймпада: при открытом поиске его поле получает D-pad и буквы, A — запуск первого, B — закрыть. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            if (search.visibility == View.VISIBLE) {
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_BUTTON_A -> { search.launchFirst(); return true }
+                    KeyEvent.KEYCODE_BUTTON_B -> { search.hide(); return true }
+                }
+            } else if (xmb.onKey(event.keyCode)) {
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    /**
+     * Консоль (Retroid Pocket и т. п.) — альбомный XMB, телефон — портрет, даже с подключённым BT-геймпадом.
+     * Признаки: производитель Retroid, встроенный геймпад или «естественная» альбомная ориентация экрана.
+     */
+    private fun isConsole(): Boolean {
+        if (Build.MANUFACTURER.contains("retroid", ignoreCase = true) || Build.BRAND.contains("retroid", ignoreCase = true)) return true
+        val builtInPad = InputDevice.getDeviceIds().any { id ->
+            InputDevice.getDevice(id)?.let { !it.isExternal && it.supportsSource(InputDevice.SOURCE_GAMEPAD) } == true
+        }
+        val r = display?.rotation ?: Surface.ROTATION_0
+        val turned = r == Surface.ROTATION_90 || r == Surface.ROTATION_270
+        val landscapeNow = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        return builtInPad || (landscapeNow != turned)
     }
 
     @Deprecated("Лаунчер сам обрабатывает «назад»")

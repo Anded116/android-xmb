@@ -132,7 +132,7 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
                 }
             })
             setOnEditorActionListener { _, _, _ ->
-                (icons.firstOrNull() ?: rows.firstOrNull())?.let { launch(it, cellRect(0)) }
+                launchFirst()
                 true
             }
             setOnFocusChangeListener { _, has -> if (has) unfreeze() }
@@ -184,6 +184,10 @@ class SearchLayer(context: Context, private val iconPx: Int) : FrameLayout(conte
         field.requestFocus()
         field.post { showKeyboard() }
         invalidate()
+    }
+
+    fun launchFirst() {
+        (icons.firstOrNull() ?: rows.firstOrNull())?.let { launch(it, cellRect(0)) }
     }
 
     /** Закрыть с анимацией; false — поиск и так закрыт. */
