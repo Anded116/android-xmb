@@ -553,6 +553,16 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
         invalidate()
     }
 
+    /** Пересобрать все открытые уровни: оценки, плейлисты или очередь изменились. */
+    fun refreshLevels() {
+        for (l in levels) l.items = l.source.children?.invoke() ?: continue
+        if (levels.isEmpty()) return
+        val last = max(0, levels.last().items.lastIndex)
+        posTarget[levelCol] = posTarget[levelCol].coerceIn(0, last)
+        if (pos[levelCol] > last) pos[levelCol] = last.toFloat()
+        invalidate()
+    }
+
     /** Открыть пункт-папку раздела по ключу — «Сейчас играет» из карточки и уведомления. */
     fun openFolder(sectionId: String, key: String): Boolean {
         val c = sections.indexOfFirst { it.id == sectionId }

@@ -75,7 +75,11 @@ class MainActivity : Activity() {
             if (!wasStopped) askFresh()
             if (openNow && xmb.openFolder("music", MusicLibrary.NOW)) openNow = false
         }
-        music = MusicLibrary(ui, iconPx, onArt = { xmb.postInvalidate() }, onAsk = ::askAudio)
+        MusicData.init(this)
+        MusicData.listen(musicDataChanged)
+        music = MusicLibrary(ui, iconPx, onArt = { xmb.postInvalidate() }, onAsk = ::askAudio) { title, items ->
+            xmb.post { xmb.showMenu(title, items) }
+        }
         photos = Gallery(ui, iconPx, video = false, onAsk = ::askGallery, onPick = { pick(video = false) }) { list, i -> viewer.show(list, i) }
         videos = Gallery(ui, iconPx, video = true, onAsk = ::askGallery, onPick = { pick(video = true) }) { list, i -> play(list[i]) }
         viewer = PhotoViewer(ui)
@@ -237,6 +241,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         Music.unlisten(musicChanged)
+        MusicData.unlisten(musicDataChanged)
         repo.stop()
         super.onDestroy()
     }
@@ -344,6 +349,12 @@ class MainActivity : Activity() {
             hadQueue = t != null
             repo.reload()
         }
+    }
+
+    /** Оценки и плейлисты изменились: открытые списки и подписи в колонке «Музыки» — заново. */
+    private val musicDataChanged: () -> Unit = {
+        xmb.refreshLevels()
+        repo.reload()
     }
 
     /** Доступ к музыке; если система больше не спрашивает (отказали дважды) — страница приложения в настройках. */
@@ -566,6 +577,7 @@ class MainActivity : Activity() {
      * потом перенос в раздел и служебное.
      */
     private fun menuFor(entry: AppEntry): List<XmbView.MenuItem> {
+        entry.menu?.let { return it() }
         val cn = entry.component ?: return emptyList()
         val items = ArrayList<XmbView.MenuItem>()
         val iconSize = (28 * resources.displayMetrics.density).roundToInt()

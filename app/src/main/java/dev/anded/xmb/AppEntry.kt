@@ -23,6 +23,8 @@ class AppEntry(
     val action: (() -> Unit)? = null,
     /** Миниатюра (фото, видео): грузится в фоне, когда пункт показался на экране, — см. Thumbs. */
     val thumb: (() -> Bitmap?)? = null,
+    /** Своё меню долгого тапа (трек: оценка, избранное, плейлист, очередь) вместо меню приложения. */
+    val menu: (() -> List<XmbView.MenuItem>)? = null,
 ) {
     @Volatile var icon: Bitmap? = null
     var thumbAsked = false

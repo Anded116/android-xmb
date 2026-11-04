@@ -64,6 +64,7 @@ object GlyphArt {
         Glyph.TRACKS -> R.drawable.xmb_tracks
         Glyph.QUEUE -> R.drawable.xmb_queue
         Glyph.STOP -> R.drawable.xmb_stop
+        Glyph.HEART -> R.drawable.xmb_heart
     }
 
     /** Значок size×size с полем pad вокруг под тень; центр значка — центр Bitmap. */

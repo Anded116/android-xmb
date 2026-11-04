@@ -22,7 +22,10 @@ import android.provider.MediaStore
 import android.util.Size
 import java.util.concurrent.Executors
 
-/** Трек из MediaStore; number — номер в альбоме (у многодисковых — 1001, 2001…). */
+/**
+ * Трек из MediaStore; number — номер в альбоме (у многодисковых — 1001, 2001…), path — ключ оценок и плейлистов
+ * (MusicData): от Music/HiBy, как на карте плеера, или от корня памяти со «/» впереди.
+ */
 class Track(
     val id: Long,
     val title: String,
@@ -31,6 +34,7 @@ class Track(
     val albumId: Long,
     val duration: Long,
     val number: Int,
+    val path: String,
 ) {
     val uri: Uri get() = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
 }
@@ -62,6 +66,25 @@ object Music {
     private val listeners = ArrayList<() -> Unit>()
     private val main = Handler(Looper.getMainLooper())
     private val artLoader = Executors.newSingleThreadExecutor { Thread(it, "xmb-art") }
+
+    // Статистика, как на плеере: прослушан — отыграл половину или 4 минуты; пропущен — ушли раньше 30 с, но не
+    // в первые 2 (так листают очередь). Время — реальное, перемотка не в счёт.
+    private var heardTrack: Track? = null
+    private var heard = 0
+    private var heardPlayed = false
+    private val tick = object : Runnable {
+        override fun run() {
+            val t = heardTrack ?: return
+            if (!playing || t !== current) return
+            heard++
+            val need = if (t.duration > 0) minOf(240L, t.duration / 2000) else 240L
+            if (!heardPlayed && heard >= need) {
+                heardPlayed = true
+                MusicData.played(t)
+            }
+            main.postDelayed(this, 1000)
+        }
+    }
 
     private val attrs = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -98,6 +121,20 @@ object Music {
 
     fun next() = jump(index + 1)
 
+    /** «Играть следующим»: сразу за текущим; ничего не играет — играть сразу. */
+    fun playNext(context: Context, tracks: List<Track>) {
+        if (current == null) return play(context, tracks, 0)
+        queue = queue.toMutableList().apply { addAll(index + 1, tracks) }
+        changed()
+    }
+
+    /** «В конец очереди»; ничего не играет — играть сразу. */
+    fun enqueue(context: Context, tracks: List<Track>) {
+        if (current == null) return play(context, tracks, 0)
+        queue = queue + tracks
+        changed()
+    }
+
     /** В начало трека, а если он только начался — на предыдущий. */
     fun previous() {
         val p = player
@@ -115,6 +152,7 @@ object Music {
 
     /** Остановить и забыть очередь: уведомление уходит, карточка гаснет. */
     fun stop() {
+        heardEnd(byEnd = true)   // остановить — не значит пропустить
         release()
         abandonFocus()
         queue = emptyList()
@@ -131,9 +169,13 @@ object Music {
 
     private fun load(i: Int) {
         val ctx = app ?: return
+        heardEnd(byEnd = false)
         release()
         index = i
         val track = queue[i]
+        heardTrack = track
+        heard = 0
+        heardPlayed = false
         art = null
         loadArt(ctx, track)
         val p = MediaPlayer()
@@ -145,6 +187,7 @@ object Music {
             start()
         }
         p.setOnCompletionListener {
+            heardEnd(byEnd = true)
             if (index < queue.lastIndex) {
                 load(index + 1)
             } else {
@@ -174,6 +217,8 @@ object Music {
         if (!requestFocus()) return
         p.start()
         playing = true
+        main.removeCallbacks(tick)
+        main.postDelayed(tick, 1000)
         setNoisy(true)
         changed()
     }
@@ -182,6 +227,7 @@ object Music {
         val p = player ?: return
         if (prepared && p.isPlaying) p.pause()
         playing = false
+        main.removeCallbacks(tick)
         setNoisy(false)
         if (abandon) abandonFocus()
         changed()
@@ -196,7 +242,14 @@ object Music {
         player = null
         prepared = false
         playing = false
+        main.removeCallbacks(tick)
         setNoisy(false)
+    }
+
+    private fun heardEnd(byEnd: Boolean) {
+        val t = heardTrack ?: return
+        if (!byEnd && !heardPlayed && heard in 2 until 30) MusicData.skipped(t)
+        heardTrack = null
     }
 
     private fun requestFocus(): Boolean {
