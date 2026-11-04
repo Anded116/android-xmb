@@ -9,18 +9,11 @@
     <string name="sec_chat">Общение</string>
     <string name="sec_fun">Развлечения</string>
     <string name="sec_games">Игры</string>
-    <string name="sec_photo">Фото и видео</string>
-    <string name="sec_news">Чтение</string>
     <string name="sec_shop">Покупки</string>
     <string name="sec_banks">Финансы</string>
     <string name="sec_maps">Путешествия</string>
     <string name="sec_work">Работа</string>
-    <string name="sec_business">Бизнес</string>
-    <string name="sec_edu">Учёба</string>
-    <string name="sec_health">Здоровье</string>
-    <string name="sec_life">Образ жизни</string>
     <string name="sec_tools">Утилиты</string>
-    <string name="sec_other">Прочее</string>
 
     <!-- Оформления, темы, фоны, формы -->
     <string name="look_classic">Классика</string>

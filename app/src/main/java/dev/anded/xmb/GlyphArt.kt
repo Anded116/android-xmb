@@ -52,13 +52,7 @@ object GlyphArt {
         Glyph.HELP -> R.drawable.xmb_help
         Glyph.LOOK -> R.drawable.xmb_look
         Glyph.GAMES -> R.drawable.xmb_games
-        Glyph.PHOTO -> R.drawable.xmb_photo
-        Glyph.NEWS -> R.drawable.xmb_news
         Glyph.WORK -> R.drawable.xmb_work
-        Glyph.BUSINESS -> R.drawable.xmb_business
-        Glyph.EDU -> R.drawable.xmb_edu
-        Glyph.HEALTH -> R.drawable.xmb_health
-        Glyph.LIFE -> R.drawable.xmb_life
         Glyph.TOOLS -> R.drawable.xmb_tools
         Glyph.STATUS -> R.drawable.xmb_status
     }

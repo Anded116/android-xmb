@@ -24,7 +24,7 @@ the section, tap any app to open it — no grids, no pages, no clutter.
 • Games section picks up emulators and game frontends automatically
 
 **Smart, not busy**
-• Apps sorted into sections automatically: Social, Games, Entertainment, Finance, Travel and more; empty ones hide
+• Ten sections, filled automatically: Social, Entertainment, Games, Shopping, Finance, Travel, Productivity, Utilities
 • «Frequent» learns what you use; optional dock for your five favourites
 • Search with typo tolerance, transliteration and wrong-keyboard-layout detection
 • App shortcuts (recent chats, actions) right in the long-press menu and in search
@@ -54,7 +54,7 @@ No internet permission, no ads, no analytics. Everything stays on your device.
 • Раздел «Игры» сам находит эмуляторы и игровые оболочки
 
 **Умно, но без суеты**
-• Приложения сами раскладываются по разделам: Общение, Игры, Развлечения, Финансы, Путешествия и другие; пустые скрыты
+• Десять разделов, заполняются сами: Общение, Развлечения, Игры, Покупки, Финансы, Путешествия, Работа, Утилиты
 • «Частые» запоминают, чем вы пользуетесь; док на пять любимых — по желанию
 • Поиск с опечатками, транслитом и набором в чужой раскладке
 • Ярлыки приложений (свежие чаты, действия) — в меню долгого тапа и в поиске

@@ -11,18 +11,11 @@
     <string name="sec_chat">Social</string>
     <string name="sec_fun">Entertainment</string>
     <string name="sec_games">Games</string>
-    <string name="sec_photo">Photo &amp; video</string>
-    <string name="sec_news">Reading</string>
     <string name="sec_shop">Shopping</string>
     <string name="sec_banks">Finance</string>
     <string name="sec_maps">Travel</string>
     <string name="sec_work">Productivity</string>
-    <string name="sec_business">Business</string>
-    <string name="sec_edu">Education</string>
-    <string name="sec_health">Health</string>
-    <string name="sec_life">Lifestyle</string>
     <string name="sec_tools">Utilities</string>
-    <string name="sec_other">Other</string>
 
     <!-- Looks, themes, backgrounds, shapes -->
     <string name="look_classic">Classic</string>
