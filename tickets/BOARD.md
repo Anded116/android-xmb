@@ -8,24 +8,22 @@
 
 | Статус | Тикетов |
 |---|---|
-| `open` | 7 |
-| `fixed` | 1 |
+| `open` | 5 |
+| `fixed` | 3 |
 | `accepted` | 8 |
 | **всего** | **16** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
-| ui | 1 | 0 | 0 |
+| ui | 0 | 0 | 1 |
 | input | 1 | 0 | 0 |
-| media | 3 | 0 | 1 |
+| media | 2 | 0 | 2 |
 | store | 2 | 0 | 0 |
 
 ## 🔥 Открытые (open / in-progress)
 
 | ID | P | Статус | Область | Заголовок |
 |---|---|---|---|---|
-| [LNC-A0010](LNC-A0010-vlozhennye-spiski-v-kolonke.md) | P2 | open | ui | Вложенные списки в колонке |
-| [LNC-A0011](LNC-A0011-razdel-muzyka-so-svoim-proigryvatelem.md) | P2 | open | media | Раздел «Музыка» со своим проигрывателем |
 | [LNC-A0012](LNC-A0012-razdel-foto-so-svoim-prosmotrom-full.md) | P2 | open | media | Раздел «Фото» со своим просмотром (full) |
 | [LNC-A0013](LNC-A0013-razdel-video-s-peredachey-sistemnomu-pleeru.md) | P2 | open | media | Раздел «Видео» с передачей системному плееру |
 | [LNC-A0014](LNC-A0014-nazvanie-prilozheniya-i-identifikator-dlya-play.md) | P2 | open | store | Название приложения и идентификатор для Play |
@@ -35,6 +33,11 @@
 ## 🧪 Ждут проверки (fixed)
 
 Агент считает, что починил; вы это не проверяли. Проверить надо одно: проблема действительно ушла?
+
+**Проверить ГЛАЗАМИ В ДЕМО**
+
+- [ ] [LNC-A0010](LNC-A0010-vlozhennye-spiski-v-kolonke.md) `[P2/ui]` Вложенные списки в колонке
+- [ ] [LNC-A0011](LNC-A0011-razdel-muzyka-so-svoim-proigryvatelem.md) `[P2/media]` Раздел «Музыка» со своим проигрывателем
 
 ## 📐 Решения (decision)
 
