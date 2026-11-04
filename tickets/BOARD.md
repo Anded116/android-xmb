@@ -8,16 +8,16 @@
 
 | Статус | Тикетов |
 |---|---|
-| `open` | 3 |
-| `fixed` | 7 |
-| `accepted` | 9 |
-| **всего** | **19** |
+| `open` | 5 |
+| `fixed` | 12 |
+| `accepted` | 10 |
+| **всего** | **27** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
 | ui | 0 | 0 | 1 |
 | input | 1 | 0 | 0 |
-| media | 0 | 0 | 4 |
+| media | 2 | 0 | 9 |
 | system | 0 | 0 | 1 |
 | store | 2 | 0 | 1 |
 
@@ -28,6 +28,8 @@
 | [LNC-A0014](LNC-A0014-nazvanie-prilozheniya-i-identifikator-dlya-play.md) | P2 | open | store | Название приложения и идентификатор для Play |
 | [LNC-A0015](LNC-A0015-shagi-vladeltsa-akkaunta-pered-vypuskom-v-play.md) | P2 | open | store | Шаги владельца аккаунта перед выпуском в Play |
 | [LNC-A0016](LNC-A0016-proverka-na-realnoy-igrovoy-pristavke.md) | P2 | open | input | Проверка на реальной игровой приставке 👀 |
+| [LNC-A0025](LNC-A0025-sinhronizatsiya-otsenok-proslushivaniy-i.md) | P3 | open | media | Синхронизация оценок, прослушиваний и плейлистов телефон ↔ плеер |
+| [LNC-A0026](LNC-A0026-upravlenie-pleerom-hiby-s-telefona.md) | P3 | open | media | Управление плеером HiBy с телефона |
 
 ## 🧪 Ждут проверки (fixed)
 
@@ -39,11 +41,17 @@
 - [ ] [LNC-A0011](LNC-A0011-razdel-muzyka-so-svoim-proigryvatelem.md) `[P2/media]` Раздел «Музыка» со своим проигрывателем
 - [ ] [LNC-A0012](LNC-A0012-razdel-foto-so-svoim-prosmotrom-full.md) `[P2/media]` Раздел «Фото» со своим просмотром (full)
 - [ ] [LNC-A0013](LNC-A0013-razdel-video-s-peredachey-sistemnomu-pleeru.md) `[P2/media]` Раздел «Видео» с передачей системному плееру
+- [ ] [LNC-A0020](LNC-A0020-perenos-chasti-trekov-s-pleera-hiby-na-telefon.md) `[P2/media]` Перенос части треков с плеера HiBy на телефон
+- [ ] [LNC-A0021](LNC-A0021-otsenki-i-statistika-proslushivaniy-kak-na.md) `[P2/media]` Оценки и статистика прослушиваний, как на плеере
+- [ ] [LNC-A0022](LNC-A0022-pleylisty-i-izbrannoe-kak-na-pleere.md) `[P2/media]` Плейлисты и «Избранное», как на плеере
+- [ ] [LNC-A0023](LNC-A0023-umnye-spiski-luchshee-4-5-zvezd-i-davno-ne.md) `[P2/media]` Умные списки: «Лучшее: 4–5 звёзд» и «Давно не слушал»
+- [ ] [LNC-A0024](LNC-A0024-ochered-igrat-sleduyuschim-i-v-konets-ocheredi.md) `[P2/media]` Очередь: «Играть следующим» и «В конец очереди»
 
 ## 📐 Решения (decision)
 
 | ID | Принято | Статус | Область | Решение |
 |---|---|---|---|---|
+| [LNC-A0027](LNC-A0027-s-pleera-na-telefon-izbrannoe-4-5-zvezd-i.md) | 2026-11-04 | accepted | media | С плеера на телефон — избранное, 4–5 звёзд и слушанное 2+ раза |
 | [LNC-A0019](LNC-A0019-foto-i-video-v-store-cherez-sistemnyy-vybor.md) | 2026-11-04 | accepted | store | Фото и видео в store — через системный выбор |
 | [LNC-A0008](LNC-A0008-foto-muzyka-i-video-kak-na-psp-optsiey.md) | 2026-11-04 | accepted | media | Фото, музыка и видео как на PSP — опцией |
 | [LNC-A0007](LNC-A0007-v-magazinnoy-sborke-net-chuzhih-marok.md) | 2026-11-04 | accepted | store | В магазинной сборке нет чужих марок |
