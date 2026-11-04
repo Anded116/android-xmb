@@ -8,10 +8,10 @@
 
 | Статус | Тикетов |
 |---|---|
-| `open` | 4 |
-| `fixed` | 6 |
-| `accepted` | 8 |
-| **всего** | **18** |
+| `open` | 3 |
+| `fixed` | 7 |
+| `accepted` | 9 |
+| **всего** | **19** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
@@ -19,7 +19,7 @@
 | input | 1 | 0 | 0 |
 | media | 0 | 0 | 4 |
 | system | 0 | 0 | 1 |
-| store | 3 | 0 | 0 |
+| store | 2 | 0 | 1 |
 
 ## 🔥 Открытые (open / in-progress)
 
@@ -28,7 +28,6 @@
 | [LNC-A0014](LNC-A0014-nazvanie-prilozheniya-i-identifikator-dlya-play.md) | P2 | open | store | Название приложения и идентификатор для Play |
 | [LNC-A0015](LNC-A0015-shagi-vladeltsa-akkaunta-pered-vypuskom-v-play.md) | P2 | open | store | Шаги владельца аккаунта перед выпуском в Play |
 | [LNC-A0016](LNC-A0016-proverka-na-realnoy-igrovoy-pristavke.md) | P2 | open | input | Проверка на реальной игровой приставке 👀 |
-| [LNC-A0018](LNC-A0018-foto-i-video-v-magazinnoy-sborke-cherez.md) | P3 | open | store | Фото и видео в магазинной сборке через системный выбор |
 
 ## 🧪 Ждут проверки (fixed)
 
@@ -45,6 +44,7 @@
 
 | ID | Принято | Статус | Область | Решение |
 |---|---|---|---|---|
+| [LNC-A0019](LNC-A0019-foto-i-video-v-store-cherez-sistemnyy-vybor.md) | 2026-11-04 | accepted | store | Фото и видео в store — через системный выбор |
 | [LNC-A0008](LNC-A0008-foto-muzyka-i-video-kak-na-psp-optsiey.md) | 2026-11-04 | accepted | media | Фото, музыка и видео как на PSP — опцией |
 | [LNC-A0007](LNC-A0007-v-magazinnoy-sborke-net-chuzhih-marok.md) | 2026-11-04 | accepted | store | В магазинной сборке нет чужих марок |
 | [LNC-A0006](LNC-A0006-shtorka-uvedomleniy-tolko-sistemnym-zhestom.md) | 2026-11-04 | accepted | system | Шторка уведомлений только системным жестом |
