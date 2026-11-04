@@ -8,7 +8,8 @@
 
 | Статус | Тикетов |
 |---|---|
-| `open` | 8 |
+| `open` | 7 |
+| `fixed` | 1 |
 | `accepted` | 8 |
 | **всего** | **16** |
 
@@ -16,14 +17,13 @@
 |---|---|---|---|
 | ui | 1 | 0 | 0 |
 | input | 1 | 0 | 0 |
-| media | 4 | 0 | 0 |
+| media | 3 | 0 | 1 |
 | store | 2 | 0 | 0 |
 
 ## 🔥 Открытые (open / in-progress)
 
 | ID | P | Статус | Область | Заголовок |
 |---|---|---|---|---|
-| [LNC-A0009](LNC-A0009-optsiya-mediarazdelov-i-opredelenie-pristavki.md) | P2 | open | media | Опция медиаразделов и определение приставки |
 | [LNC-A0010](LNC-A0010-vlozhennye-spiski-v-kolonke.md) | P2 | open | ui | Вложенные списки в колонке |
 | [LNC-A0011](LNC-A0011-razdel-muzyka-so-svoim-proigryvatelem.md) | P2 | open | media | Раздел «Музыка» со своим проигрывателем |
 | [LNC-A0012](LNC-A0012-razdel-foto-so-svoim-prosmotrom-full.md) | P2 | open | media | Раздел «Фото» со своим просмотром (full) |
@@ -36,7 +36,6 @@
 
 Агент считает, что починил; вы это не проверяли. Проверить надо одно: проблема действительно ушла?
 
-_Нечего проверять: тикетов в статусе `fixed` нет._
 ## 📐 Решения (decision)
 
 | ID | Принято | Статус | Область | Решение |
