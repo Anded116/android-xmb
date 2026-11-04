@@ -55,6 +55,9 @@ object GlyphArt {
         Glyph.WORK -> R.drawable.xmb_work
         Glyph.TOOLS -> R.drawable.xmb_tools
         Glyph.STATUS -> R.drawable.xmb_status
+        Glyph.PHOTO -> R.drawable.xmb_photo
+        Glyph.MUSIC -> R.drawable.xmb_music
+        Glyph.VIDEO -> R.drawable.xmb_video
     }
 
     /** Значок size×size с полем pad вокруг под тень; центр значка — центр Bitmap. */

@@ -4,17 +4,24 @@ import android.content.pm.ApplicationInfo
 
 enum class Glyph { STAR, SETTINGS, CHAT, BANK, MAP, PLAY, BAG, FOOD, GRID, HOME, KEY, RESET, SEARCH, THEME, WAVE, ICONS, WALLPAPER,
     LOOK, MEDIA_PLAY, MEDIA_PAUSE, MEDIA_NEXT, MEDIA_PREV, CALENDAR, BELL, HELP,
-    GAMES, WORK, TOOLS, STATUS,
+    GAMES, WORK, TOOLS, STATUS, PHOTO, MUSIC, VIDEO,
 }
 
-/** Раздел. title — строковый ресурс; always — показывается и пустым («Частые», «Настройки»), остальные пустые скрыты. */
-class Category(val id: String, val title: Int, val glyph: Glyph, val always: Boolean = false)
+/**
+ * Раздел. title — строковый ресурс; always — показывается и пустым («Частые», «Настройки»), остальные пустые скрыты.
+ * media: null — раздел есть всегда; true — только с медиаразделами (Фото, Музыка, Видео); false — только без них.
+ */
+class Category(val id: String, val title: Int, val glyph: Glyph, val always: Boolean = false, val media: Boolean? = null) {
+    fun shown(withMedia: Boolean): Boolean = media == null || media == withMedia
+}
 
 /**
  * Десять разделов — по мотивам «умного» списка Nothing Launcher, но укрупнённые, чтобы ряд не разрастался:
  * Развлечения вбирают фото, видео и чтение, Покупки — еду и доставку, Работа — бизнес и учёбу,
  * Утилиты — здоровье, дом и всё, что не опознано. Финансы и Игры — отдельно (приставки).
  * Ручные перекладки по прежним разделам переезжают в объединённые (LEGACY).
+ * С медиаразделами (опция, на приставках по умолчанию, LNC-A0008) ряд как на PSP: Фото, Музыка, Видео вместо
+ * Развлечений, Финансы — в Покупках, Путешествия — в Утилитах; разделов по-прежнему десять.
  */
 object Categories {
     /** «Частые» — сами собираются из самых открываемых; переложить приложение туда нельзя. */
@@ -29,19 +36,57 @@ object Categories {
     val all = listOf(
         Category(TOP, R.string.sec_top, Glyph.STAR, always = true),
         Category(SETTINGS_ID, R.string.sec_settings, Glyph.SETTINGS, always = true),
+        Category("photo", R.string.sec_photo, Glyph.PHOTO, media = true),
+        Category("music", R.string.sec_music, Glyph.MUSIC, media = true),
+        Category("video", R.string.sec_video, Glyph.VIDEO, media = true),
         Category("chat", R.string.sec_chat, Glyph.CHAT),
-        Category("fun", R.string.sec_fun, Glyph.PLAY),
+        Category("fun", R.string.sec_fun, Glyph.PLAY, media = false),
         Category("games", R.string.sec_games, Glyph.GAMES),
         Category("shop", R.string.sec_shop, Glyph.BAG),
-        Category("banks", R.string.sec_banks, Glyph.BANK),
-        Category("maps", R.string.sec_maps, Glyph.MAP),
+        Category("banks", R.string.sec_banks, Glyph.BANK, media = false),
+        Category("maps", R.string.sec_maps, Glyph.MAP, media = false),
         Category("work", R.string.sec_work, Glyph.WORK),
         Category(OTHER, R.string.sec_tools, Glyph.TOOLS),
     )
 
     private val LEGACY = mapOf(
-        "food" to "shop", "life" to "shop", "photo" to "fun", "news" to "fun", "business" to "work", "edu" to "work",
+        "food" to "shop", "life" to "shop", "news" to "fun", "business" to "work", "edu" to "work",
         "health" to OTHER, "other" to OTHER,
+    )
+
+    /**
+     * Раздел с учётом медиаразделов: без них Фото/Музыка/Видео — это Развлечения; с ними Развлечения расходятся
+     * по типу приложения, Финансы уходят в Покупки, Путешествия — в Утилиты.
+     */
+    fun resolve(id: String, pkg: String, appCategory: Int, media: Boolean): String {
+        val key = LEGACY[id] ?: id
+        if (!media) return if (key == "photo" || key == "music" || key == "video") "fun" else key
+        return when (key) {
+            "fun" -> mediaKind(pkg.lowercase(), appCategory)
+            "banks" -> "shop"
+            "maps" -> OTHER
+            else -> key
+        }
+    }
+
+    private fun mediaKind(p: String, appCategory: Int): String = when {
+        MUSIC.any { p.contains(it) } || appCategory == ApplicationInfo.CATEGORY_AUDIO -> "music"
+        VIDEO.any { p.contains(it) } || appCategory == ApplicationInfo.CATEGORY_VIDEO -> "video"
+        PHOTO.any { p.contains(it) } || appCategory == ApplicationInfo.CATEGORY_IMAGE -> "photo"
+        else -> OTHER
+    }
+
+    private val MUSIC = listOf(
+        "music", "spotify", "soundcloud", "deezer", "tidal", "podcast", "audio", "radio", "zvuk", "boom", "poweramp",
+        "musicolet", "retromusic", "vanced.music",
+    )
+    private val VIDEO = listOf(
+        "youtube", "netflix", "kinopoisk", "ru.ivi", "ru.okko", "ru.kion", "wink", "twitch", "vkvideo", "rutube",
+        "video", ".tv", "vlc", "mxtech", "kodi", "plex", "jellyfin", "disney", "hbo", "primevideo", "crunchyroll",
+    )
+    private val PHOTO = listOf(
+        "camera", "gallery", "com.google.android.apps.photos", "snapseed", "lightroom", "picsart", "capcut", "vsco",
+        "inshot", "photo", "composer", "pinterest",
     )
 
     fun indexOf(id: String?): Int {

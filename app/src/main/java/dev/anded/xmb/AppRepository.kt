@@ -132,7 +132,10 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             val sc = buildShortcuts()
             main.post {
                 val all = withUsage(built)
-                val keep = Categories.all.indices.filter { Categories.all[it].always || all[it].isNotEmpty() }
+                val media = XmbSettings.media
+                val keep = Categories.all.indices.filter { i ->
+                    Categories.all[i].shown(media) && (Categories.all[i].always || all[i].isNotEmpty())
+                }
                 sections = keep.map { Categories.all[it] }
                 columns = keep.map { all[it] }
                 shortcuts = sc
@@ -145,6 +148,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
 
     private fun build(): List<List<AppEntry>> {
         val cols = List(Categories.all.size) { ArrayList<AppEntry>() }
+        val media = XmbSettings.media
         for (user in userManager.userProfiles) {
             for (info in launcherApps.getActivityList(null, user)) {
                 val cn = info.componentName
@@ -153,9 +157,10 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
                 val label = info.label?.toString()?.trim().orEmpty().ifEmpty { cn.packageName }
                 val catId = prefs.getString(PREF_CATEGORY + key, null)
                     ?: Categories.classify(cn.packageName, label, info.applicationInfo.category)
+                val section = Categories.resolve(catId, cn.packageName, info.applicationInfo.category, media)
                 val entry = AppEntry(key, label, cn, user, info)
                 entry.icon = icons[key]
-                cols[Categories.indexOf(catId)].add(entry)
+                cols[Categories.indexOf(section)].add(entry)
             }
         }
         val collator = Collator.getInstance(Locale.forLanguageTag("ru"))
@@ -296,6 +301,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
             special("style", R.string.set_style, Glyph.WAVE, res.getStringArray(R.array.style_names)[XmbSettings.style]),
             special("freeze", R.string.set_freeze, Glyph.WAVE, str(if (XmbSettings.freezeBg) R.string.freeze_on else R.string.freeze_always)),
             special("status", R.string.set_status, Glyph.STATUS, res.getStringArray(R.array.status_names)[XmbSettings.statusBar]),
+            special("media", R.string.set_media, Glyph.MUSIC, str(if (XmbSettings.media) R.string.media_on else R.string.media_off)),
             special("dock", R.string.set_dock, Glyph.GRID, str(if (XmbSettings.dock) R.string.dock_on else R.string.dock_off)),
             special("order", R.string.set_order, Glyph.GRID, str(if (XmbSettings.sortByUsage) R.string.order_usage else R.string.order_abc)),
             special("icons", R.string.set_icons, Glyph.ICONS, iconName),

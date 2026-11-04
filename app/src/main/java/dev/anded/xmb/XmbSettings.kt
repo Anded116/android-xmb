@@ -1,6 +1,8 @@
 package dev.anded.xmb
 
 import android.content.Context
+import android.content.res.Configuration
+import android.view.InputDevice
 import android.content.SharedPreferences
 
 /** Оформление: тема, фон, значки. Общие для лаунчера и живых обоев — они в одном процессе. */
@@ -31,6 +33,23 @@ object XmbSettings {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences("xmb", Context.MODE_PRIVATE)
+        mediaDefault = handheld(context)
+    }
+
+    /** Медиаразделы (Фото, Музыка, Видео вместо Развлечений); по умолчанию — на приставках и ТВ (LNC-A0008). */
+    var media: Boolean
+        get() = prefs.getBoolean("media", mediaDefault)
+        set(v) = prefs.edit().putBoolean("media", v).apply()
+    private var mediaDefault = false
+
+    /** Приставка — встроенный (не подключённый) геймпад; ТВ — по режиму интерфейса. */
+    private fun handheld(context: Context): Boolean {
+        val ui = context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
+        if (ui == Configuration.UI_MODE_TYPE_TELEVISION) return true
+        return InputDevice.getDeviceIds().any { id ->
+            val d = InputDevice.getDevice(id)
+            d != null && !d.isExternal && d.supportsSource(InputDevice.SOURCE_GAMEPAD)
+        }
     }
 
     /** Оформление; читается на каждый кадр (тень текста), поэтому держится в поле. */

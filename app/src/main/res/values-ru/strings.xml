@@ -6,6 +6,9 @@
     <!-- Разделы -->
     <string name="sec_top">Частые</string>
     <string name="sec_settings">Настройки</string>
+    <string name="sec_photo">Фото</string>
+    <string name="sec_music">Музыка</string>
+    <string name="sec_video">Видео</string>
     <string name="sec_chat">Общение</string>
     <string name="sec_fun">Развлечения</string>
     <string name="sec_games">Игры</string>
@@ -61,6 +64,11 @@
         <item>Всегда видна</item>
         <item>Всегда скрыта, свои часы</item>
     </string-array>
+    <string name="set_media">Медиаразделы</string>
+    <string name="media_on">Фото, Музыка и Видео вместо «Развлечений»</string>
+    <string name="media_off">Выключены</string>
+    <string name="media_show">Фото, Музыка, Видео</string>
+    <string name="media_hide">Выключить</string>
     <string name="set_dock">Док</string>
     <string name="dock_on">Пять своих приложений внизу</string>
     <string name="dock_off">Выключен</string>

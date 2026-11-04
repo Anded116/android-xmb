@@ -2,7 +2,7 @@
 id: LNC-A0009
 title: Опция медиаразделов и определение приставки
 type: feature
-status: open
+status: in-progress
 priority: P2
 area: media
 source: agent
@@ -23,3 +23,4 @@ links: LNC-A0008
 ## История
 
 - 2026-11-04 (agent): создан (feature, open).
+- 2026-11-04 (agent): status open -> in-progress - делаю: опция, определение приставки, разделы Фото/Музыка/Видео из приложений

@@ -8,6 +8,9 @@
     <!-- Sections -->
     <string name="sec_top">Frequent</string>
     <string name="sec_settings">Settings</string>
+    <string name="sec_photo">Photo</string>
+    <string name="sec_music">Music</string>
+    <string name="sec_video">Video</string>
     <string name="sec_chat">Social</string>
     <string name="sec_fun">Entertainment</string>
     <string name="sec_games">Games</string>
@@ -63,6 +66,11 @@
         <item>Always shown</item>
         <item>Always hidden, own clock</item>
     </string-array>
+    <string name="set_media">Media sections</string>
+    <string name="media_on">Photo, Music and Video instead of Entertainment</string>
+    <string name="media_off">Off</string>
+    <string name="media_show">Photo, Music, Video</string>
+    <string name="media_hide">Turn off</string>
     <string name="set_dock">Dock</string>
     <string name="dock_on">Your five apps at the bottom</string>
     <string name="dock_off">Off</string>

@@ -298,6 +298,7 @@ class MainActivity : Activity() {
             "order" -> orderMenu()
             "freeze" -> freezeMenu()
             "dock" -> dockMenu()
+            "media" -> mediaMenu()
             "status" -> statusMenu()
             "notices" -> open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             "calendar" -> if (NextEvent.granted(this)) refreshCalendar() else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 1)
@@ -418,6 +419,17 @@ class MainActivity : Activity() {
         xmb.showMenu(getString(R.string.set_status), items)
     }
 
+    private fun mediaMenu() {
+        val items = listOf(true to getString(R.string.media_show), false to getString(R.string.media_hide)).map { (on, label) ->
+            XmbView.MenuItem(label, checked = XmbSettings.media == on, keepOpen = true) {
+                XmbSettings.media = on
+                mediaMenu()
+                repo.reload()
+            }
+        }
+        xmb.showMenu(getString(R.string.set_media), items)
+    }
+
     private fun dockMenu() {
         val items = listOf(true to getString(R.string.dock_show), false to getString(R.string.dock_hide)).map { (on, label) ->
             XmbView.MenuItem(label, checked = XmbSettings.dock == on, keepOpen = true) {
@@ -509,7 +521,7 @@ class MainActivity : Activity() {
     /** Выбор раздела для приложения; текущий отмечен. В «Частые» не кладут — они собираются сами. */
     private fun moveMenu(entry: AppEntry, title: String) {
         val current = repo.categoryOf(entry)
-        val items = Categories.all.filter { it.id != Categories.TOP }.map { c ->
+        val items = Categories.all.filter { it.id != Categories.TOP && it.shown(XmbSettings.media) }.map { c ->
             XmbView.MenuItem(getString(c.title), checked = c.id == current) {
                 if (c.id != current) repo.moveTo(entry, c.id)
             }
