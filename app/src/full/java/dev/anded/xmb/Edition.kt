@@ -15,6 +15,9 @@ object Edition {
     /** Док по умолчанию. */
     const val DOCK = true
 
+    /** Свои «Фото» и «Видео» из MediaStore (LNC-A0012). */
+    const val GALLERY = true
+
     /** Значки приложений, которых нет в общем наборе AppGlyphs. */
     fun glyph(context: Context, pkg: String): Drawable? = when (pkg) {
         "com.tredir.app" -> context.getDrawable(R.drawable.app_tredir)

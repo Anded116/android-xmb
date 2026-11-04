@@ -16,6 +16,9 @@ object Edition {
     /** Док по умолчанию. */
     const val DOCK = false
 
+    /** Свои «Фото» и «Видео»: Play пускает READ_MEDIA_IMAGES/VIDEO только галереям — в разделах одни приложения. */
+    const val GALLERY = false
+
     /** Значки приложений, которых нет в общем наборе AppGlyphs. */
     @Suppress("UNUSED_PARAMETER")
     fun glyph(context: Context, pkg: String): Drawable? = null

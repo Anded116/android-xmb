@@ -21,8 +21,11 @@ class AppEntry(
     val children: (() -> List<AppEntry>)? = null,
     /** Своё действие вместо запуска приложения: трек, кнопка проигрывателя. */
     val action: (() -> Unit)? = null,
+    /** Миниатюра (фото, видео): грузится в фоне, когда пункт показался на экране, — см. Thumbs. */
+    val thumb: (() -> Bitmap?)? = null,
 ) {
     @Volatile var icon: Bitmap? = null
+    var thumbAsked = false
 
     val keys: AppSearch.Keys by lazy { AppSearch.Keys(label, component?.packageName.orEmpty()) }
 

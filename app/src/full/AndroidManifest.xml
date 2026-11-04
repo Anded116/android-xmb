@@ -7,6 +7,10 @@
         android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Свои «Фото» и «Видео» (LNC-A0012): в Play такие разрешения пускают только галереям — поэтому только здесь -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
     <application>
         <service
             android:name=".EssentialKeyService"

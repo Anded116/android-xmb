@@ -36,6 +36,9 @@ class MainActivity : Activity() {
     private lateinit var search: SearchLayer
     private lateinit var repo: AppRepository
     private lateinit var music: MusicLibrary
+    private lateinit var photos: Gallery
+    private lateinit var videos: Gallery
+    private lateinit var viewer: PhotoViewer
     private lateinit var launcherApps: LauncherApps
     private var fastModeId = 0
     // Лаунчер уходил с экрана (onStop) и ещё не вернулся (onResume). Пауза — не признак: перед onNewIntent Android
@@ -71,7 +74,19 @@ class MainActivity : Activity() {
             if (openNow && xmb.openFolder("music", MusicLibrary.NOW)) openNow = false
         }
         music = MusicLibrary(ui, iconPx, onArt = { xmb.postInvalidate() }, onAsk = ::askAudio)
-        repo.extras = { id -> if (id == "music") music.roots() else emptyList() }
+        photos = Gallery(ui, iconPx, video = false, onAsk = ::askGallery) { list, i -> viewer.show(list, i) }
+        videos = Gallery(ui, iconPx, video = true, onAsk = ::askGallery) { list, i -> play(list[i]) }
+        viewer = PhotoViewer(ui)
+        repo.extras = { id ->
+            when (id) {
+                "music" -> music.roots()
+                "photo" -> photos.roots()
+                "video" -> videos.roots()
+                else -> emptyList()
+            }
+        }
+        val thumbs = Thumbs { xmb.invalidate() }
+        xmb.onThumb = thumbs::request
         Music.listen(musicChanged)
 
         val start = repo.prefs.getString(PREF_LAST, Categories.TOP) ?: Categories.TOP
@@ -94,6 +109,7 @@ class MainActivity : Activity() {
         }
         setContentView(FrameLayout(this).apply {
             addView(xmb)
+            addView(viewer)
             addView(search)
         })
         repo.start()
@@ -223,6 +239,7 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         xmb.closeMenu()
+        viewer.close()
         // «Домой» на самом лаунчере — из вложенного списка к колонке раздела.
         if (!wasStopped) xmb.closeLevels()
         handleKey(intent)
@@ -231,7 +248,11 @@ class MainActivity : Activity() {
     // С целевым API 36 «назад» приходит только сюда (onBackPressed не вызывается). Лаунчер — домашний экран:
     // «назад» всегда наш — закрыть поиск, подсказки или меню, иначе ничего.
     private val back = OnBackInvokedCallback {
-        if (search.open) closeSearch() else if (!xmb.closeHints() && !xmb.closeMenu()) xmb.back()
+        when {
+            search.open -> closeSearch()
+            viewer.open -> viewer.close()
+            !xmb.closeHints() && !xmb.closeMenu() -> xmb.back()
+        }
     }
 
     /**
@@ -253,7 +274,9 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (search.open) {
+        if (viewer.open) {
+            if (viewer.onKey(event)) return true
+        } else if (search.open) {
             if (event.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
                 if (event.action == KeyEvent.ACTION_DOWN) toggleSearch()
                 return true
@@ -312,11 +335,24 @@ class MainActivity : Activity() {
         requestPermissions(arrayOf(Manifest.permission.READ_MEDIA_AUDIO), REQ_AUDIO)
     }
 
+    /** Фото и видео — одним системным вопросом. */
+    private fun askGallery() {
+        requestPermissions(Gallery.PERMISSIONS, REQ_GALLERY)
+    }
+
+    /** Ролик — системным плеером или тем, что пользователь выбрал для видео. */
+    private fun play(shot: Shot) {
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(shot.uri, shot.mime)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(intent) }.onFailure { Toast.makeText(this, R.string.video_no_player, Toast.LENGTH_SHORT).show() }
+    }
+
     @Deprecated("Activity API")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQ_AUDIO && grantResults.firstOrNull() == PackageManager.PERMISSION_DENIED &&
-            !shouldShowRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)
+        if ((requestCode == REQ_AUDIO || requestCode == REQ_GALLERY) && permissions.isNotEmpty() &&
+            grantResults.firstOrNull() == PackageManager.PERMISSION_DENIED && !shouldShowRequestPermissionRationale(permissions[0])
         ) {
             open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
         }
@@ -599,6 +635,7 @@ class MainActivity : Activity() {
         private const val PREF_ASKED_HOME = "asked_home"
         private const val REQ_HOME = 2
         private const val REQ_AUDIO = 3
+        private const val REQ_GALLERY = 4
         const val EXTRA_KEY = "dev.anded.xmb.KEY"
         const val KEY_SEARCH = "search"
         const val KEY_MUSIC = "music"

@@ -41,7 +41,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
     private val icons = ConcurrentHashMap<String, Bitmap>()
     private val requested = AtomicInteger()
 
-    /** Свои пункты раздела по id — в начало колонки (музыка на устройстве); зовётся из потока сборки. */
+    /** Свои пункты раздела по id — в начало колонки (фото, музыка, видео на устройстве); зовётся из потока сборки. */
     var extras: (String) -> List<AppEntry> = { emptyList() }
 
     /** Раздел на экране (id) — его значки рисуются первыми. */
@@ -169,7 +169,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         val collator = Collator.getInstance(Locale.forLanguageTag("ru"))
         for (list in cols) list.sortWith { a, b -> collator.compare(a.label, b.label) }
         cols[Categories.SETTINGS].addAll(0, specials())
-        if (media) cols[Categories.indexOf("music")].addAll(0, extras("music"))
+        if (media) for (id in MEDIA) cols[Categories.indexOf(id)].addAll(0, extras(id))
         return cols
     }
 
@@ -453,6 +453,7 @@ class AppRepository(private val context: Context, private val iconPx: Int, priva
         const val ICON_DP = 52
         private const val MENU_SHORTCUTS = 5
         const val DOCK_SIZE = 5
+        private val MEDIA = listOf("photo", "music", "video")
         private const val PREF_DOCK = "dock"
 
         fun noticesEnabled(context: Context): Boolean {

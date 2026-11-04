@@ -181,4 +181,26 @@
         <item quantity="many">%d исполнителей</item>
         <item quantity="other">%d исполнителя</item>
     </plurals>
+    <!-- Фото и видео (LNC-A0012, LNC-A0013) -->
+    <string name="photo_library">Фото на устройстве</string>
+    <string name="video_library">Видео на устройстве</string>
+    <string name="gallery_allow">Разрешить доступ к фото и видео</string>
+    <string name="photo_none">Фото не найдены</string>
+    <string name="video_none">Видео не найдены</string>
+    <string name="gallery_none_sub">Здесь появятся снимки и ролики</string>
+    <string name="photo_all">Все фото</string>
+    <string name="video_all">Все видео</string>
+    <string name="video_no_player">Нет приложения, чтобы открыть видео</string>
+    <plurals name="photo_n">
+        <item quantity="one">%d фото</item>
+        <item quantity="few">%d фото</item>
+        <item quantity="many">%d фото</item>
+        <item quantity="other">%d фото</item>
+    </plurals>
+    <plurals name="video_n">
+        <item quantity="one">%d видео</item>
+        <item quantity="few">%d видео</item>
+        <item quantity="many">%d видео</item>
+        <item quantity="other">%d видео</item>
+    </plurals>
 </resources>

@@ -4,10 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
 import android.provider.MediaStore
 import android.util.Size
 import java.text.Collator
@@ -148,17 +144,8 @@ class MusicLibrary(
         }
     }
 
-    /** Обложка квадратом со скруглением, в поле значка — как у значков приложений. */
     private fun cover(albumId: Long): Bitmap? = runCatching {
-        val src = context.contentResolver.loadThumbnail(Music.albumUri(albumId), Size(iconPx, iconPx), null)
-        val pad = iconPx / 10f
-        val out = Bitmap.createBitmap(iconPx, iconPx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        val r = RectF(pad, pad, iconPx - pad, iconPx - pad)
-        canvas.clipPath(Path().apply { addRoundRect(r, iconPx * 0.12f, iconPx * 0.12f, Path.Direction.CW) })
-        canvas.drawBitmap(src, null, r, Paint(Paint.FILTER_BITMAP_FLAG))
-        src.recycle()
-        out.copy(Bitmap.Config.HARDWARE, false)?.also { out.recycle() } ?: out
+        Thumbs.tile(context.contentResolver.loadThumbnail(Music.albumUri(albumId), Size(iconPx, iconPx), null), iconPx)
     }.getOrNull()
 
     private fun folder(key: String, label: String, sub: String?, glyph: Glyph, open: () -> List<AppEntry>): AppEntry =

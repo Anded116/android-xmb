@@ -177,4 +177,22 @@
         <item quantity="one">%d artist</item>
         <item quantity="other">%d artists</item>
     </plurals>
+    <!-- Фото и видео (LNC-A0012, LNC-A0013) -->
+    <string name="photo_library">Photos on this device</string>
+    <string name="video_library">Videos on this device</string>
+    <string name="gallery_allow">Allow access to photos and videos</string>
+    <string name="photo_none">No photos found</string>
+    <string name="video_none">No videos found</string>
+    <string name="gallery_none_sub">Shots and clips will show up here</string>
+    <string name="photo_all">All photos</string>
+    <string name="video_all">All videos</string>
+    <string name="video_no_player">No app to play this video</string>
+    <plurals name="photo_n">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <plurals name="video_n">
+        <item quantity="one">%d video</item>
+        <item quantity="other">%d videos</item>
+    </plurals>
 </resources>

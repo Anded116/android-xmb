@@ -73,6 +73,8 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
     var onHintsClosed: () -> Unit = {}
     /** Тап по карточке с нашим же проигрывателем: true — открыт свой экран «Сейчас играет». */
     var onNowPlaying: () -> Boolean = { false }
+    /** Пункт с ленивой миниатюрой показался на экране — загрузить её. */
+    var onThumb: (AppEntry) -> Unit = {}
 
     /** Ближайшее событие календаря для карточки «Сейчас»; null — нет или нет разрешения. */
     var calendar: NextEvent? = null
@@ -827,6 +829,10 @@ class XmbView(context: Context, private val iconPx: Int) : View(context) {
             if (fold > 0f) a *= if (abs(d) < 0.5f) 1f - FOLD_DIM * fold else 1f - fold
             if (a <= 0.01f) continue
             val e = list[i]
+            if (e.thumb != null && !e.thumbAsked) {
+                e.thumbAsked = true
+                onThumb(e)
+            }
             if (e.shownFor != textMaxW) ellipsize(e)
             val ta = a * (1f - fold)
             val half = iconDraw / 2f * (1f + SEL_GROW * near)
