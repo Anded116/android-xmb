@@ -8,27 +8,27 @@
 
 | Статус | Тикетов |
 |---|---|
-| `open` | 5 |
-| `fixed` | 3 |
+| `open` | 4 |
+| `fixed` | 6 |
 | `accepted` | 8 |
-| **всего** | **16** |
+| **всего** | **18** |
 
 | Область | open | in-progress | fixed |
 |---|---|---|---|
 | ui | 0 | 0 | 1 |
 | input | 1 | 0 | 0 |
-| media | 2 | 0 | 2 |
-| store | 2 | 0 | 0 |
+| media | 0 | 0 | 4 |
+| system | 0 | 0 | 1 |
+| store | 3 | 0 | 0 |
 
 ## 🔥 Открытые (open / in-progress)
 
 | ID | P | Статус | Область | Заголовок |
 |---|---|---|---|---|
-| [LNC-A0012](LNC-A0012-razdel-foto-so-svoim-prosmotrom-full.md) | P2 | open | media | Раздел «Фото» со своим просмотром (full) |
-| [LNC-A0013](LNC-A0013-razdel-video-s-peredachey-sistemnomu-pleeru.md) | P2 | open | media | Раздел «Видео» с передачей системному плееру |
 | [LNC-A0014](LNC-A0014-nazvanie-prilozheniya-i-identifikator-dlya-play.md) | P2 | open | store | Название приложения и идентификатор для Play |
 | [LNC-A0015](LNC-A0015-shagi-vladeltsa-akkaunta-pered-vypuskom-v-play.md) | P2 | open | store | Шаги владельца аккаунта перед выпуском в Play |
 | [LNC-A0016](LNC-A0016-proverka-na-realnoy-igrovoy-pristavke.md) | P2 | open | input | Проверка на реальной игровой приставке 👀 |
+| [LNC-A0018](LNC-A0018-foto-i-video-v-magazinnoy-sborke-cherez.md) | P3 | open | store | Фото и видео в магазинной сборке через системный выбор |
 
 ## 🧪 Ждут проверки (fixed)
 
@@ -38,6 +38,8 @@
 
 - [ ] [LNC-A0010](LNC-A0010-vlozhennye-spiski-v-kolonke.md) `[P2/ui]` Вложенные списки в колонке
 - [ ] [LNC-A0011](LNC-A0011-razdel-muzyka-so-svoim-proigryvatelem.md) `[P2/media]` Раздел «Музыка» со своим проигрывателем
+- [ ] [LNC-A0012](LNC-A0012-razdel-foto-so-svoim-prosmotrom-full.md) `[P2/media]` Раздел «Фото» со своим просмотром (full)
+- [ ] [LNC-A0013](LNC-A0013-razdel-video-s-peredachey-sistemnomu-pleeru.md) `[P2/media]` Раздел «Видео» с передачей системному плееру
 
 ## 📐 Решения (decision)
 
